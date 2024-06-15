@@ -1,12 +1,13 @@
 <script>
     import { goto } from '$app/navigation';
+    import { base } from '$app/paths'
 
 	let identityNumber = '';
 
 	function handleSubmit() {
 		// Aquí puedes manejar la lógica para enviar el número de identidad
         console.log(`Número de identidad ingresado: ${identityNumber}`);
-        goto("/member_card")
+        goto(base + "/member_card")
 	}
 </script>
 
