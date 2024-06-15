@@ -4,7 +4,8 @@
     "name": "Deportista Coral Swimmer",
     "short_name": "Deportista",
     "display": "standalone",
-    "start_url": "/",
+    "start_url": "/coral-swimmer-athlete",
+    "scope": "/coral-swimmer-athlete",
     "icons": [
       {
         "src": "logo_192.png",
