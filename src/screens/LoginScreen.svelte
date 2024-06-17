@@ -4,9 +4,6 @@
 	let identityNumber = '';
 
 	async function handleSubmit() {
-		// Aquí puedes manejar la lógica para enviar el número de identidad
-		console.log(`Número de identidad ingresado: ${identityNumber}`);
-
 		await onSubmit(identityNumber);
 	}
 </script>

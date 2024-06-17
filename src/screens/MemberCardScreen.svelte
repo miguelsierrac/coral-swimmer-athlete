@@ -13,6 +13,7 @@
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
 </svelte:head>
 
+{#if athlete}
 <div
 	class="relative flex size-full min-h-screen flex-col bg-[#fcfaf8] justify-between group/design-root overflow-x-hidden"
 >
@@ -137,3 +138,4 @@
 		{/if}
 	</div>
 </div>
+{/if}
