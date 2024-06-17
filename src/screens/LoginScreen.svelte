@@ -1,18 +1,13 @@
 <script>
-    import Provider from '../Provider'
-
-    export let onGetAthlete;
-    export let redirect;
+	export let onSubmit;
 
 	let identityNumber = '';
 
 	async function handleSubmit() {
 		// Aquí puedes manejar la lógica para enviar el número de identidad
-        console.log(`Número de identidad ingresado: ${identityNumber}`);
+		console.log(`Número de identidad ingresado: ${identityNumber}`);
 
-        let result = await onGetAthlete(identityNumber);
-        console.log(result);
-        redirect('/member_card');
+		await onSubmit(identityNumber);
 	}
 </script>
 
@@ -20,16 +15,19 @@
 	<!-- Icono desde la carpeta img -->
 	<img src="logo_512.png" alt="Icono" class="icon" />
 
-	<!-- Campo de entrada para el número de identidad -->
-	<input
-		type="text"
-		class="input-field"
-		placeholder="Ingrese su número de identidad"
-		bind:value={identityNumber}
-	/>
+	<form on:submit|preventDefault={handleSubmit}>
+		<!-- Campo de entrada para el número de identidad -->
+		<input
+			type="text"
+			class="input-field"
+			placeholder="Ingrese su número de identidad"
+			bind:value={identityNumber}
+			required
+		/>
 
-	<!-- Botón de ingresar -->
-	<button class="submit-button" on:click={handleSubmit}>Ingresar</button>
+		<!-- Botón de ingresar -->
+		<button class="submit-button">Ingresar</button>
+	</form>
 </div>
 
 <style>
@@ -40,7 +38,7 @@
 		justify-content: center; /* Centra verticalmente los elementos */
 		align-items: center; /* Centra horizontalmente los elementos */
 		height: 100vh; /* Ocupa toda la altura de la pantalla visible */
-        padding: 0 20px; /* Padding horizontal de 20px */
+		padding: 0 20px; /* Padding horizontal de 20px */
 		gap: 10px;
 		margin-bottom: 20px;
 	}

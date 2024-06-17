@@ -1,6 +1,6 @@
 export class GetAthlete {
     _apiClient
-    
+
     constructor(apiClient) {
         this._apiClient = apiClient
     }
@@ -15,7 +15,8 @@ export class GetAthlete {
             "id": remote.id,
             "forename": remote.nombre,
             "surname": remote.apellido,
-            "identification": remote.documento
+            "identification": remote.documento,
+            "phone": remote.telefono
         }
     }
 }

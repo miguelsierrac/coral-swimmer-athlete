@@ -5,9 +5,12 @@
 	const redirect = getContext('redirect')
     const provider = getContext('provider')
 
-	const onGetAthlete = async (id) => {
-		return provider.getAthlete.handle(id);
+	const onSubmit = async (id) => {
+		let result = await provider.getAthlete.handle(id);
+		let athleteStr = JSON.stringify(result);
+		localStorage.setItem('ATHLETE', athleteStr);
+		redirect('/member_card');
 	}
 </script>
 
-<LoginScreen {onGetAthlete} {redirect} />
+<LoginScreen {onSubmit} />

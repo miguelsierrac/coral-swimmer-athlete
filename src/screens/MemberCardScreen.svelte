@@ -1,3 +1,7 @@
+<script>
+	export let athlete;
+</script>
+
 <svelte:head>
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
     <link
@@ -26,9 +30,9 @@
 						>
 							CLUB CORAL SWIMMER
 						</p>
-						<p class="text-[#9c7849] text-base font-normal leading-normal text-center">ID: 1234</p>
+						<p class="text-[#9c7849] text-base font-normal leading-normal text-center">ID: {athlete.identification}</p>
 						<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
-							Valido hasta Julio 2023
+							Valido hasta Julio 2024
 						</p>
 					</div>
 				</div>
@@ -53,7 +57,7 @@
 					></path>
 				</svg>
 			</div>
-			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">Lara Smith</p>
+			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">{athlete.forename} {athlete.surname}</p>
 		</div>
 		<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4">
 			<div class="flex justify-center w-1/2 h-auto p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600">
@@ -80,7 +84,7 @@
 				</svg>
 			</div>
 			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
-				Miembro desde 2019
+				Miembro desde 2024
 			</p>
 		</div>
 		<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
@@ -106,6 +110,7 @@
 				Clases restantes: <b>10</b>
 			</p>
 		</div>
+		{#if athlete.phone}
 		<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
 			<div
 				class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-10"
@@ -126,8 +131,9 @@
 				</svg>
 			</div>
 			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
-				Phone: +1234567890
+				Telefóno: {athlete.phone}
 			</p>
 		</div>
+		{/if}
 	</div>
 </div>
