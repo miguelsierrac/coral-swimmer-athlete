@@ -7,8 +7,8 @@
 
 	const onSubmit = async (id) => {
 		let result = await provider.getAthlete.handle(id);
-		let athleteStr = JSON.stringify(result);
 		if (typeof localStorage !== 'undefined') {
+			let athleteStr = JSON.stringify(result);
 			localStorage.setItem('ATHLETE', athleteStr);
 		}
 		redirect('/member_card');

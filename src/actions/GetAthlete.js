@@ -16,7 +16,9 @@ export class GetAthlete {
             "forename": remote.nombre,
             "surname": remote.apellido,
             "identification": remote.documento,
-            "phone": remote.telefono
+            "phone": remote.telefono,
+            "start_date": remote.fecha_inicio,
+            "remaining_days": remote.dias_restantes
         }
     }
 }

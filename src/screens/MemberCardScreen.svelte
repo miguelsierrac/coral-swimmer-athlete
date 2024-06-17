@@ -60,8 +60,8 @@
 			</div>
 			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">{athlete.forename} {athlete.surname}</p>
 		</div>
-		<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4">
-			<div class="flex justify-center w-1/2 h-auto p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600">
+		<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-24">
+			<div class="flex justify-center w-full h-auto p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600">
 				<svg class="flex w-auto h-auto text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
 			</div>
 		</div>
@@ -85,7 +85,7 @@
 				</svg>
 			</div>
 			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
-				Miembro desde 2024
+				Miembro desde {new Date(athlete.start_date).getFullYear()}
 			</p>
 		</div>
 		<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
@@ -108,7 +108,7 @@
 				</svg>
 			</div>
 			<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
-				Clases restantes: <b>10</b>
+				Clases restantes: <b>{athlete.remaining_days}</b>
 			</p>
 		</div>
 		{#if athlete.phone}
