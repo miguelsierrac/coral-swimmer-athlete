@@ -1,5 +1,23 @@
 <script>
 	export let athlete;
+	export let onLogOut;
+
+	function convertDateToUTC(date) {
+		return new Date(
+			date.getUTCFullYear(),
+			date.getUTCMonth(),
+			date.getUTCDate(),
+			date.getUTCHours(),
+			date.getUTCMinutes(),
+			date.getUTCSeconds()
+		);
+	}
+
+	function expired(date) {
+		let now = convertDateToUTC(new Date());
+
+		return now > date;
+	}
 </script>
 
 <svelte:head>
@@ -34,9 +52,22 @@
 							<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
 								ID: {athlete.identification}
 							</p>
-							<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
-								Valido hasta Julio 2024
-							</p>
+							{#if expired(convertDateToUTC(new Date(athlete.expiration_date)))}
+								<p
+									class="text-[#9c7849] text-base text-red-600 font-bold leading-normal text-center"
+								>
+									Expiró {convertDateToUTC(new Date(athlete.expiration_date)).toLocaleDateString(
+										'es-ES',
+										{ day: 'numeric', month: 'long', year: 'numeric' }
+									)}
+								</p>
+							{:else}
+								<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
+									Valido hasta {convertDateToUTC(
+										new Date(athlete.expiration_date)
+									).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+								</p>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -65,15 +96,15 @@
 					{athlete.surname}
 				</p>
 			</div>
-			<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-24">
+			<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-28">
 				{#if athlete.photo}
 					<div
-						class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl h-auto w-full"
+						class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl max-h-40 w-full"
 						style="background-image: url({athlete.photo});"
 					></div>
 				{:else}
 					<div
-						class="flex justify-center w-full h-auto p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600"
+						class="flex justify-center w-full max-h-40 p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600"
 					>
 						<svg
 							class="flex w-auto h-auto text-gray-400"
@@ -109,7 +140,10 @@
 					</svg>
 				</div>
 				<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
-					Miembro desde {new Date(athlete.start_date).getFullYear()}
+					Miembro desde {convertDateToUTC(new Date(athlete.start_date)).toLocaleDateString(
+						'es-ES',
+						{ month: 'long', year: 'numeric' }
+					)}
 				</p>
 			</div>
 			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
@@ -160,6 +194,18 @@
 					</p>
 				</div>
 			{/if}
+			<div class="flex p-4 @container">
+				<div class="flex w-full flex-col gap-4 items-center">
+					<div class="flex gap-4 flex-col items-center">
+						<div class="flex flex-col items-center justify-center">
+							<button
+								class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+								on:click={onLogOut()}>Cerrar Sesión</button
+							>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 {/if}

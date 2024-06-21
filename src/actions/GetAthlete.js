@@ -18,6 +18,7 @@ export class GetAthlete {
             "identification": remote.documento,
             "phone": remote.telefono,
             "start_date": remote.fecha_inicio,
+            "expiration_date": remote.fecha_vencimiento,
             "remaining_days": remote.dias_restantes,
             "photo": remote.foto
         }

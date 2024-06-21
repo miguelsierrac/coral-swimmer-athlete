@@ -2,9 +2,12 @@
 	export let onSubmit;
 
 	let identityNumber = '';
+	let loading = false;
 
 	async function handleSubmit() {
+		loading = true;
 		await onSubmit(identityNumber);
+		loading = false;
 	}
 </script>
 
@@ -23,7 +26,13 @@
 		/>
 
 		<!-- Botón de ingresar -->
-		<button class="submit-button">Ingresar</button>
+		<button class="submit-button" disabled={loading}>Ingresar</button>
+
+		{#if loading}
+		<dialog open>
+			Cargando...
+		</dialog>
+		{/if}
 	</form>
 </div>
 

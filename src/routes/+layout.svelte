@@ -5,6 +5,7 @@
 	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { setContext } from 'svelte';
+	import { athlete, lastSync } from '../stores.js'
 
 	const provider = Provider;
 
@@ -18,6 +19,9 @@
 	};
 
 	setContext('redirect', redirect);
+
+	setContext('athlete', athlete);
+	setContext('lastSync', lastSync);
 </script>
 
 <slot />
