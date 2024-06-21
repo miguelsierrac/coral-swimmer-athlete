@@ -23,7 +23,7 @@
 	onMount(async () => {
 		let now = new Date();
 		console.log(now)
-		if ($athlete && $lastSync && now > addHours(new Date($lastSync), 1)) {
+		if ($athlete) {
 			try {
 				$athlete = await provider.getAthlete.handle($athlete.identification);
 				$lastSync = new Date();
