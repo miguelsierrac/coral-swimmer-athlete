@@ -166,7 +166,11 @@
 					</svg>
 				</div>
 				<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
+					{#if athlete.remaining_days >= 0}
 					Clases restantes: <b>{athlete.remaining_days}</b>
+					{:else}
+					Clases restantes: <b>0 <span class="text-[#9c7849] text-base text-red-600">({athlete.remaining_days} extras)</span></b>
+					{/if}
 				</p>
 			</div>
 			{#if athlete.phone}
