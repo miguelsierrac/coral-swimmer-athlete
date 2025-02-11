@@ -48,44 +48,35 @@
 		return permission === 'granted';
 	}
 
-	async function registerServiceWorker() {
-		if ('serviceWorker' in navigator) {
-			try {
-				let registration = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
-				console.log('Registration successful, scope is:', registration.scope);
-			} catch (err) {
-				console.log('Service worker registration failed, error:', err);
-			}
-		}
-	}
-
 	onMount(async () => {
-		await registerServiceWorker();
 		let permissionGranted = await requestNotificationPermission();
 		if (permissionGranted) {
 			console.log('Notification permission granted.');
 
-			console.log('Messaging get token...');
-			getToken(messaging, {
-				vapidKey:
-					'BIxDq1HszvHFhbBARVJcPokYfOFQo74ZAzq2LZCBVn2K740j0TnvCJMBAgHweAGIG5bPlJTfHcE9cdr_du4Gqc4'
-			})
-				.then((currentToken) => {
-					if (currentToken) {
-						// Send the token to your server and update the UI if necessary
-						// ...
-						console.log('Token available: ', currentToken);
-						$token = currentToken;
-					} else {
-						// Show permission request UI
-						console.log('No registration token available. Request permission to generate one.');
-						// ...
-					}
+			navigator.serviceWorker.register(base + '/firebase-messaging-sw.js').then((registration) => {
+				console.log('Messaging get token...');
+				getToken(messaging, {
+					serviceWorkerRegistration: registration,
+					vapidKey:
+						'BIxDq1HszvHFhbBARVJcPokYfOFQo74ZAzq2LZCBVn2K740j0TnvCJMBAgHweAGIG5bPlJTfHcE9cdr_du4Gqc4'
 				})
-				.catch((err) => {
-					console.log('An error occurred while retrieving token. ', err);
-					// ...
-				});
+					.then((currentToken) => {
+						if (currentToken) {
+							// Send the token to your server and update the UI if necessary
+							// ...
+							console.log('Token available: ', currentToken);
+							$token = currentToken;
+						} else {
+							// Show permission request UI
+							console.log('No registration token available. Request permission to generate one.');
+							// ...
+						}
+					})
+					.catch((err) => {
+						console.log('An error occurred while retrieving token. ', err);
+						// ...
+					});
+			});
 
 			onMessage(messaging, (payload) => {
 				console.log('Message received. ', payload);
