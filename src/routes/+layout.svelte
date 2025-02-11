@@ -59,42 +59,56 @@
 		Notification.requestPermission().then((permission) => {
 			if (permission === 'granted') {
 				console.log('Notification permission granted.');
-				getToken(messaging, {
-					vapidKey:
-						'BIxDq1HszvHFhbBARVJcPokYfOFQo74ZAzq2LZCBVn2K740j0TnvCJMBAgHweAGIG5bPlJTfHcE9cdr_du4Gqc4'
-				})
-					.then((currentToken) => {
-						if (currentToken) {
-							// Send the token to your server and update the UI if necessary
-							// ...
-							console.log('Token available: ', currentToken);
-							localStorage.setItem('TOKEN', "\"" + currentToken + "\"");
-						} else {
-							// Show permission request UI
-							console.log('No registration token available. Request permission to generate one.');
-							// ...
-						}
-					})
-					.catch((err) => {
-						console.log('An error occurred while retrieving token. ', err);
-						// ...
-					});
 
-				onMessage(messaging, (payload) => {
-					console.log('Message received. ', payload);
+				if ('serviceWorker' in navigator) {
+					navigator.serviceWorker
+						.register('../firebase-messaging-sw.js')
+						.then(function (registration) {
+							console.log('Registration successful, scope is:', registration.scope);
 
-					const notificationTitle = payload.notification.title;
-					const notificationOptions = {
-						body: payload.notification.body,
-						icon: '/logo_512.png'
-					};
+							getToken(messaging, {
+								vapidKey:
+									'BIxDq1HszvHFhbBARVJcPokYfOFQo74ZAzq2LZCBVn2K740j0TnvCJMBAgHweAGIG5bPlJTfHcE9cdr_du4Gqc4'
+							})
+								.then((currentToken) => {
+									if (currentToken) {
+										// Send the token to your server and update the UI if necessary
+										// ...
+										console.log('Token available: ', currentToken);
+										localStorage.setItem('TOKEN', '"' + currentToken + '"');
+									} else {
+										// Show permission request UI
+										console.log(
+											'No registration token available. Request permission to generate one.'
+										);
+										// ...
+									}
+								})
+								.catch((err) => {
+									console.log('An error occurred while retrieving token. ', err);
+									// ...
+								});
 
-					var notification = new Notification(notificationTitle, notificationOptions);
-					notification.onclick = () => {
-						notification.close();
-						window.parent.focus();
-					};
-				});
+							onMessage(messaging, (payload) => {
+								console.log('Message received. ', payload);
+
+								const notificationTitle = payload.notification.title;
+								const notificationOptions = {
+									body: payload.notification.body,
+									icon: '/logo_512.png'
+								};
+
+								var notification = new Notification(notificationTitle, notificationOptions);
+								notification.onclick = () => {
+									notification.close();
+									window.parent.focus();
+								};
+							});
+						})
+						.catch(function (err) {
+							console.log('Service worker registration failed, error:', err);
+						});
+				}
 			} else {
 				console.log('Unable to get permission to notify.');
 			}
