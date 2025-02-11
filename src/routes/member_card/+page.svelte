@@ -6,6 +6,7 @@
 	const redirect = getContext('redirect');
 	const athlete = getContext('athlete');
 	const lastSync = getContext('lastSync');
+	const token = getContext('token');
 
 	const onLogOut = () => {
 		$athlete = null;
@@ -26,6 +27,10 @@
 		if ($athlete) {
 			try {
 				$athlete = await provider.getAthlete.handle($athlete.identification);
+				if ($token && $athlete.token !== $token) {
+					$athlete.token = $token;
+					await provider.saveToken.handle($athlete);
+				}
 				$lastSync = new Date();
 			} catch (error) {
 				console.log(error);

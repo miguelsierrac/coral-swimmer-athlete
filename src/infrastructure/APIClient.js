@@ -16,10 +16,28 @@ export default class ApiClient {
         )
     }
 
-    prepareRequest(body, endpoint) {
+    async post(endpoint, body) {
+        const requestData = this.prepareRequest(
+            {}, 
+            endpoint, 
+            {
+                "Content-Type": "text/plain;charset=utf-8"
+            }
+        )
+        return this._fetch.request(
+            () => {},
+            requestData.url,
+            'POST',
+            requestData.headers,
+            JSON.stringify(body),
+            'follow'
+        )
+    }
+
+    prepareRequest(body, endpoint, headers = {}) {
         const request = {}
         const formData = new FormData()
-        const headers = new Headers()
+        const requestHeaders = new Headers(headers)
 
         if (body === undefined) {
             body = {}
@@ -30,7 +48,7 @@ export default class ApiClient {
             endpoint = endpoint.slice(0, -1)
         }
         request['url'] = this._baseURL + `&sheet=${endpoint}`
-        request['headers'] = headers
+        request['headers'] = requestHeaders
         request['body'] = formData
         return request
     }

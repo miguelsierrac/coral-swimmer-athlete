@@ -20,7 +20,8 @@ export class GetAthlete {
             "start_date": remote.fecha_inicio,
             "expiration_date": remote.fecha_vencimiento,
             "remaining_days": remote.dias_restantes,
-            "photo": remote.foto
+            "photo": remote.foto,
+            "token": remote.token
         }
     }
 }
