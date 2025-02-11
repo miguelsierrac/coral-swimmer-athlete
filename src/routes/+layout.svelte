@@ -48,7 +48,19 @@
 		return permission === 'granted';
 	}
 
+	async function registerServiceWorker() {
+		if ('serviceWorker' in navigator) {
+			try {
+				let registration = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
+				console.log('Registration successful, scope is:', registration.scope);
+			} catch (err) {
+				console.log('Service worker registration failed, error:', err);
+			}
+		}
+	}
+
 	onMount(async () => {
+		await registerServiceWorker();
 		let permissionGranted = await requestNotificationPermission();
 		if (permissionGranted) {
 			console.log('Notification permission granted.');
