@@ -28,7 +28,6 @@
 <svelte:head>
 	<script type="module">
 		// Import the functions you need from the SDKs you need
-		import { token } from './src/stores.js';
 		import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js';
 		import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.3.0/firebase-analytics.js';
 		import {
@@ -69,7 +68,7 @@
 							// Send the token to your server and update the UI if necessary
 							// ...
 							console.log('Token available: ', currentToken);
-							token.set(currentToken);
+							localStorage.setItem('TOKEN', "\"" + currentToken + "\"");
 						} else {
 							// Show permission request UI
 							console.log('No registration token available. Request permission to generate one.');
