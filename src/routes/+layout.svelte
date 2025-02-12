@@ -8,6 +8,7 @@
 	import { athlete, lastSync, token } from '../stores.js';
 	import { initializeApp } from 'firebase/app';
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
 
 	const firebaseConfig = {
 		apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
@@ -81,17 +82,30 @@
 			onMessage(messaging, (payload) => {
 				console.log('Message received. ', payload);
 
+				if ((!'Notification') in window) {
+					// Notifications aren't supported
+					return;
+				}
+
 				const notificationTitle = payload.notification.title;
 				const notificationOptions = {
 					body: payload.notification.body,
 					icon: '/logo_512.png'
 				};
 
-				var notification = new Notification(notificationTitle, notificationOptions);
-				notification.onclick = () => {
-					notification.close();
-					window.parent.focus();
-				};
+				try {
+					var notification = new Notification(notificationTitle, notificationOptions);
+					notification.onclick = () => {
+						notification.close();
+						window.parent.focus();
+					};
+				} catch (error) {
+					console.log('Notification error: ', error);
+				}
+
+				toast.push("<strong>" + notificationTitle + "</strong><br>" + notificationOptions.body, {
+					initial: 0
+				});
 			});
 		} else {
 			console.log('Unable to get permission to notify.');
@@ -100,3 +114,5 @@
 </script>
 
 <slot />
+
+<SvelteToast />
