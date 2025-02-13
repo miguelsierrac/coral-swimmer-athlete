@@ -1,5 +1,5 @@
 <script>
-	import LoginScreen from '../screens/LoginScreen.svelte';
+	import LoginScreen from '$lib/screens/LoginScreen.svelte';
 	import { onMount, getContext } from 'svelte';
 
 	const redirect = getContext('redirect');

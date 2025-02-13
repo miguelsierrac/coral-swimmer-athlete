@@ -1,4 +1,4 @@
-import { localStore } from "./infrastructure/LocalStore.js";
+import { localStore } from "$lib/infrastructure/LocalStore.js";
 
 export const athlete = localStore("ATHLETE");
 

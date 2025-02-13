@@ -1,11 +1,11 @@
 <script>
 	import '../app.css';
-	import Provider from '../Provider';
+	import Provider from '$lib/Provider';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { onMount, setContext } from 'svelte';
-	import { athlete, lastSync, token } from '../stores.js';
+	import { athlete, lastSync, token } from '$lib/stores.js';
 	import { initializeApp } from 'firebase/app';
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
@@ -70,12 +70,10 @@
 						} else {
 							// Show permission request UI
 							console.log('No registration token available. Request permission to generate one.');
-							// ...
 						}
 					})
 					.catch((err) => {
 						console.log('An error occurred while retrieving token. ', err);
-						// ...
 					});
 			});
 
@@ -103,7 +101,7 @@
 					console.log('Notification error: ', error);
 				}
 
-				toast.push("<strong>" + notificationTitle + "</strong><br>" + notificationOptions.body, {
+				toast.push('<strong>' + notificationTitle + '</strong><br>' + notificationOptions.body, {
 					initial: 0
 				});
 			});

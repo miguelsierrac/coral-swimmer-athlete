@@ -1,5 +1,5 @@
 <script>
-	import MemberCardScreen from '../../screens/MemberCardScreen.svelte';
+	import MemberCardScreen from '$lib/screens/MemberCardScreen.svelte';
 	import { onMount, onDestroy, getContext } from 'svelte';
 
 	const provider = getContext('provider');
