@@ -1,4 +1,7 @@
 <script>
+	import { onMount } from 'svelte';
+	import { toast } from '@zerodevx/svelte-toast';
+
 	export let athlete;
 	export let onLogOut;
 
@@ -18,6 +21,46 @@
 
 		return now > date;
 	}
+
+	function showNotification(title, body, message, duration = undefined) {
+		var options = {};
+		if (duration) {
+			options['duration'] = duration;
+		} else {
+			options['initial'] = 0;
+		}
+		toast.push(
+			'<strong>' +
+				title +
+				'</strong><br>' +
+				body +
+				'<br><br><a class="bg-red-500 hover:bg-red-700 text-white py-1 px-1 rounded" aria-label="Contactarme" href="https://wa.me/573215384134?text=' +
+				encodeURIComponent(message) +
+				'">💬 CONTACTARSE<a />',
+			options
+		);
+	}
+
+	onMount(() => {
+		if (athlete) {
+			if (expired(convertDateToUTC(new Date(athlete.expiration_date))) || athlete.remaining_days <= 0) {
+				showNotification(
+					'IMPORTANTE ‼',
+					'Tu plan ha expirado o ya no te quedan clases disponibles, si deseas continuar con nosotros, puedes contactarnos para renovar tu plan o solicitar días adicionales, puedes hacerlo dando click aquí:',
+					'Quiero renovar mi plan o solicitar clases adicionales'
+				);
+			} else if (athlete.remaining_days < 2) {
+				showNotification(
+					'Recordatorio',
+					'Ya solo te quedan ' +
+						athlete.remaining_days +
+						' clases restantes. Si lo deseas, puedes contactarnos para cambiar tu plan o solicitar días adicionales, puedes hacerlo dando click aquí:',
+					'Quiero cambiar mi plan o solicitar clases adicionales'
+				);
+			}
+		}
+		console.log(athlete);
+	});
 </script>
 
 <svelte:head>
@@ -167,9 +210,13 @@
 				</div>
 				<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate">
 					{#if athlete.remaining_days >= 0}
-					Clases restantes: <b>{athlete.remaining_days}</b>
+						Clases restantes: <b>{athlete.remaining_days}</b>
 					{:else}
-					Clases restantes: <b>0 <span class="text-[#9c7849] text-base text-red-600">({athlete.remaining_days} extras)</span></b>
+						Clases restantes: <b
+							>0 <span class="text-[#9c7849] text-base text-red-600"
+								>({athlete.remaining_days} extras)</span
+							></b
+						>
 					{/if}
 				</p>
 			</div>
@@ -212,4 +259,35 @@
 			</div>
 		</div>
 	</div>
+	{#if expired(convertDateToUTC(new Date(athlete.expiration_date)))}
+		<div class="fixed top-60 right-8 left-8">
+			<span class="stamp is-nope">Vencido</span>
+		</div>
+	{/if}
 {/if}
+
+<style>
+	.stamp {
+		transform: rotate(12deg);
+		color: #555;
+		font-size: 3rem;
+		font-weight: 700;
+		border: 0.25rem solid #555;
+		display: inline-block;
+		padding: 0.25rem 1rem;
+		text-transform: uppercase;
+		border-radius: 1rem;
+		font-family: 'Courier';
+		-webkit-mask-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8399/grunge.png');
+		-webkit-mask-size: 944px 604px;
+		mix-blend-mode: multiply;
+	}
+
+	.is-nope {
+		color: #d23;
+		border: 0.5rem double #d23;
+		transform: rotate(12deg);
+		-webkit-mask-position: 2rem 3rem;
+		font-size: 4rem;
+	}
+</style>
