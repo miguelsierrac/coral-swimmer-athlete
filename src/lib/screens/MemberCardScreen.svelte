@@ -57,7 +57,7 @@
 						athlete.remaining_days +
 						' clases restantes. Si lo deseas, puedes contactarnos para cambiar tu plan o solicitar días adicionales, puedes hacerlo dando click aquí:',
 					'Quiero cambiar mi plan o solicitar clases adicionales',
-					6000
+					8000
 				);
 			}
 		}
