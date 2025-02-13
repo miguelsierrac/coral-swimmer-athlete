@@ -41,7 +41,8 @@
 		);
 	}
 
-	onMount(() => {
+	$: {
+		toast.pop(0);
 		if (athlete) {
 			if (expired(convertDateToUTC(new Date(athlete.expiration_date))) || athlete.remaining_days <= 0) {
 				showNotification(
@@ -59,8 +60,7 @@
 				);
 			}
 		}
-		console.log(athlete);
-	});
+	}
 </script>
 
 <svelte:head>
