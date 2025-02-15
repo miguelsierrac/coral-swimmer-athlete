@@ -7,6 +7,7 @@
 	import { onMount, setContext } from 'svelte';
 	import { athlete, lastSync, token } from '$lib/stores.js';
 	import { initializeApp } from 'firebase/app';
+	import { getAnalytics } from "firebase/analytics";
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
 
@@ -23,6 +24,7 @@
 	console.log('Initialize Firebase...');
 	// Initialize Firebase
 	const app = initializeApp(firebaseConfig);
+	const analytics = getAnalytics(app);
 	const messaging = getMessaging(app);
 
 	const provider = Provider;
