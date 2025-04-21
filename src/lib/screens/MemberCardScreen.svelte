@@ -89,16 +89,16 @@
 						></div>
 						<div class="flex flex-col items-center justify-center">
 							<p
-								class="text-[#1c150d] text-[22px] font-bold leading-tight tracking-[-0.015em] text-center"
+								class="text-[#1c150d] text-[20px] font-bold leading-tight tracking-[-0.015em] text-center"
 							>
 								CLUB CORAL SWIMMER
 							</p>
-							<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
+							<p class="text-[#9c7849] text-[14px] font-normal leading-normal text-center">
 								ID: {athlete.identification}
 							</p>
 							{#if expired(convertDateToUTC(new Date(athlete.expiration_date)))}
 								<p
-									class="text-[#9c7849] text-base text-red-600 font-bold leading-normal text-center"
+									class="text-[#9c7849] text-[14px] text-red-600 font-bold leading-normal text-center"
 								>
 									Expiró {convertDateToUTC(new Date(athlete.expiration_date)).toLocaleDateString(
 										'es-ES',
@@ -106,7 +106,7 @@
 									)}
 								</p>
 							{:else}
-								<p class="text-[#9c7849] text-base font-normal leading-normal text-center">
+								<p class="text-[#9c7849] text-[14px] font-normal leading-normal text-center">
 									Valido hasta {convertDateToUTC(
 										new Date(athlete.expiration_date)
 									).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -116,17 +116,17 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
+			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
 				<div
-					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-10"
+					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
 					data-icon="Person"
-					data-size="24px"
+					data-size="18px"
 					data-weight="regular"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						width="24px"
-						height="24px"
+						width="18px"
+						height="18px"
 						fill="currentColor"
 						viewBox="0 0 256 256"
 					>
@@ -164,17 +164,17 @@
 					</div>
 				{/if}
 			</div>
-			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
+			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
 				<div
-					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-10"
+					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
 					data-icon="Calendar"
-					data-size="24px"
+					data-size="18px"
 					data-weight="regular"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						width="24px"
-						height="24px"
+						width="18px"
+						height="18px"
 						fill="currentColor"
 						viewBox="0 0 256 256"
 					>
@@ -190,17 +190,17 @@
 					)}
 				</p>
 			</div>
-			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
+			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
 				<div
-					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-10"
+					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
 					data-icon="Copy"
-					data-size="24px"
+					data-size="18px"
 					data-weight="regular"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						width="24px"
-						height="24px"
+						width="18px"
+						height="18px"
 						fill="currentColor"
 						viewBox="0 0 256 256"
 					>
@@ -222,17 +222,17 @@
 				</p>
 			</div>
 			{#if athlete.phone}
-				<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-14">
+				<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
 					<div
-						class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-10"
+						class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
 						data-icon="Phone"
-						data-size="24px"
+						data-size="18px"
 						data-weight="regular"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							width="24px"
-							height="24px"
+							width="18px"
+							height="18px"
 							fill="currentColor"
 							viewBox="0 0 256 256"
 						>
@@ -249,6 +249,9 @@
 			<div class="flex p-4 @container">
 				<div class="flex w-full flex-col gap-4 items-center">
 					<div class="flex gap-4 flex-col items-center">
+						<div class="flex flex-col items-center justify-center">
+							<img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data={athlete.id}&amp;size=100x100" alt="" title="ID" width="50" height="50" />
+						</div>
 						<div class="flex flex-col items-center justify-center">
 							<button
 								class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
