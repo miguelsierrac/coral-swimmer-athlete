@@ -7,9 +7,10 @@
 	import { onMount, setContext } from 'svelte';
 	import { athlete, lastSync, token } from '$lib/stores.js';
 	import { initializeApp } from 'firebase/app';
-	import { getAnalytics } from "firebase/analytics";
+	import { getAnalytics } from 'firebase/analytics';
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
+	import PushNotificationComponent from '$lib/components/PushNotification.svelte';
 
 	const firebaseConfig = {
 		apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
@@ -44,6 +45,9 @@
 	setContext('lastSync', lastSync);
 	setContext('token', token);
 
+	const isNotificationSupported = () =>
+		'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+
 	async function requestNotificationPermission() {
 		console.log('Requesting permission...');
 		let permission = await Notification.requestPermission();
@@ -51,9 +55,8 @@
 		return permission === 'granted';
 	}
 
-	onMount(async () => {
-		let permissionGranted = await requestNotificationPermission();
-		if (permissionGranted) {
+	async function setupNotifications() {
+		if (Notification.permission === 'granted') {
 			console.log('Notification permission granted.');
 
 			navigator.serviceWorker.register(base + '/firebase-messaging-sw.js').then((registration) => {
@@ -82,7 +85,7 @@
 			onMessage(messaging, (payload) => {
 				console.log('Message received. ', payload);
 
-				if ((!'Notification') in window) {
+				if (!isNotificationSupported()) {
 					// Notifications aren't supported
 					return;
 				}
@@ -110,6 +113,39 @@
 		} else {
 			console.log('Unable to get permission to notify.');
 		}
+	}
+
+	onMount(async () => {
+		if (!isNotificationSupported()) {
+			console.log('Notifications are not supported in this browser.');
+			return;
+		}
+		if (Notification.permission === 'granted') {
+			console.log('Notification permission already granted.');
+			setupNotifications();
+			return;
+		}
+		toast.push({
+			component: {
+				src: PushNotificationComponent,
+				props: {
+					title: 'Aceptar notificaciones',
+					content: '¿Deseas recibir notificaciones de Coral Swimmer?',
+					confirmText: 'ACEPTAR',
+					cancelText: 'CANCELAR',
+					onConfirm: async () => {
+						await requestNotificationPermission();
+						setupNotifications();
+					},
+					onCancel: () => {
+						console.log('User accepted notifications.');
+					}
+				},
+				sendIdTo: 'toastId' // send toast id to `toastId` prop
+			},
+			dismissable: false,
+			initial: 0
+		});
 	});
 </script>
 
