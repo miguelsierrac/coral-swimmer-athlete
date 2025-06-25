@@ -27,10 +27,21 @@ messaging.onBackgroundMessage((payload) => {
         '[firebase-messaging-sw.js] Received background message ',
         payload
     );
+
+    if (payload.notification) {
+        console.log('Notification payload received:', payload.notification);
+        return;
+    }
+    
+    if (!payload.data || !payload.data.title || !payload.data.body) {
+        console.error('Invalid payload data:', payload.data);
+        return;
+    }
+
     // Customize notification here
-    const notificationTitle = payload.notification.title;
+    const notificationTitle = payload.data.title;
     const notificationOptions = {
-        body: payload.notification.body,
+        body: payload.data.body,
         icon: '/coral-swimmer-athlete/logo_512.png'
     };
 
