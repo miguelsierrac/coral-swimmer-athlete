@@ -35,6 +35,12 @@
 			} catch (error) {
 				console.log(error);
 			}
+			try {
+				let information = await provider.getInformation.handle($athlete.id);
+				$athlete.total_distance = information.total_distance;
+			} catch (error) {
+				console.log(error);
+			}
 		}
 	});
 

@@ -164,6 +164,29 @@
 					</div>
 				{/if}
 			</div>
+			{#if athlete.total_distance}
+			<div class="flex @container">
+				<div class="flex w-full flex-col gap-4 items-center">
+					<div class="flex gap-4 flex-row items-center">
+						{#if athlete.total_distance >= 1000}
+						<img src="medal_1k.png" alt="Icono" class="icon" width="50" height="50" />
+						{/if}
+						{#if athlete.total_distance >= 2000}
+						<img src="medal_2k.png" alt="Icono" class="icon" width="50" height="50" />
+						{/if}
+						{#if athlete.total_distance >= 5000}
+						<img src="medal_5k.png" alt="Icono" class="icon" width="50" height="50" />
+						{/if}
+						{#if athlete.total_distance >= 10000}
+						<img src="medal_10k.png" alt="Icono" class="icon" width="50" height="50" />
+						{/if}
+						{#if athlete.total_distance >= 20000}
+						<img src="medal_20k.png" alt="Icono" class="icon" width="50" height="50" />
+						{/if}
+					</div>
+				</div>
+			</div>
+			{/if}
 			<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
 				<div
 					class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
