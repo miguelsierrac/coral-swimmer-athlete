@@ -11,6 +11,7 @@
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
 	import PushNotificationComponent from '$lib/components/PushNotification.svelte';
+	import { openDB } from 'idb';
 
 	const firebaseConfig = {
 		apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
@@ -95,32 +96,59 @@
 					return;
 				}
 
-				const notificationTitle = payload.notification.title;
-				const notificationOptions = {
-					body: payload.notification.body,
-					icon: '/logo_512.png'
-				};
-
-				try {
-					var notification = new Notification(notificationTitle, notificationOptions);
-					notification.onclick = () => {
-						notification.close();
-						window.parent.focus();
-					};
-				} catch (error) {
-					console.log('Notification error: ', error);
-				}
-
-				toast.push('<strong>' + notificationTitle + '</strong><br>' + notificationOptions.body, {
-					initial: 0
-				});
+				showNotification(payload);
 			});
 		} else {
 			console.log('Unable to get permission to notify.');
 		}
 	}
 
+	async function retrieveNotifications() {
+		const dbPromise = await openDB('coral-swimmer-athlete', 1, {
+			upgrade(db) {
+				// Creates an object store:
+				db.createObjectStore('notifications', {
+					keyPath: 'id',
+					autoIncrement: true
+				});
+			}
+		});
+
+		const value = await dbPromise.getAll('notifications');
+
+		value.forEach((item) => {
+			showNotification(item, true);
+		});
+
+		dbPromise.clear('notifications');
+	}
+
+	function showNotification(payload, fromBackground = false) {
+		const notificationTitle = payload.notification.title;
+		const notificationOptions = {
+			body: payload.notification.body,
+			icon: '/logo_512.png'
+		};
+
+		if (!fromBackground) {
+			try {
+				var notification = new Notification(notificationTitle, notificationOptions);
+				notification.onclick = () => {
+					notification.close();
+					window.parent.focus();
+				};
+			} catch (error) {
+				console.log('Notification error: ', error);
+			}
+		}
+
+		toast.push('<strong>' + notificationTitle + '</strong><br>' + notificationOptions.body, {
+			initial: 0
+		});
+	}
+
 	onMount(async () => {
+		retrieveNotifications();
 		if (!isNotificationSupported()) {
 			console.log('Notifications are not supported in this browser.');
 			return;
@@ -157,3 +185,5 @@
 <slot />
 
 <SvelteToast />
+
+<SvelteToast target="critical-notifications" />

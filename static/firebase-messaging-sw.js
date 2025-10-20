@@ -28,6 +28,19 @@ messaging.onBackgroundMessage((payload) => {
         payload
     );
 
+    const dbPromise = indexedDB.open('coral-swimmer-athlete', 1);
+
+    dbPromise.onsuccess = (event) => {
+        try {
+            const db = event.target.result;
+            const transaction = db.transaction('notifications', 'readwrite');
+            const store = transaction.objectStore('notifications');
+            store.add(payload);
+        } catch (error) {
+            console.error('Error adding notification to DB:', error);
+        }
+    };
+
     if (payload.notification) {
         console.log('Notification payload received:', payload.notification);
         return;
