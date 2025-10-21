@@ -25,6 +25,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+      
+      - name: Replace manifest for GitHub Pages
+        run: rm -f static/manifest.json && cp static/manifest_gh_page.json static/manifest.json
 
       - name: build
         env:
@@ -51,20 +54,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - run: rm -f static/manifest.json && cp static/manifest_gh_page.json static/manifest.json
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-  
-  firebase_deploy:
-    needs: build_site
-    runs-on: ubuntu-latest
-
-    steps:
-      - run: rm -f static/manifest.json && cp static/manifest_firebase.json static/manifest.json
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CORAL_SWIMMER }}
-          channelId: live
-          projectId: coral-swimmer
