@@ -26,7 +26,27 @@ export class GetAthlete {
             "expiration_date": remote.fecha_vencimiento,
             "remaining_days": remote.dias_restantes,
             "photo": remote.foto,
-            "token": remote.token
+            "token": remote.token,
+            "plan": remote.plan,
+            "tier": this._mapPlanToTier(remote.plan)
+        }
+    }
+
+    _mapPlanToTier(plan) {
+        if (!plan) {
+            return 'standard';
+        }
+        const planLower = plan.toLowerCase();
+        switch (planLower) {
+            case 'niños':
+                return 'kids';
+            case 'rendimiento':
+                return 'performance';
+            case 'salud':
+                return 'health';
+            case 'basico':
+            default:
+                return 'standard';
         }
     }
 }

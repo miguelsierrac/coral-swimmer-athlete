@@ -8,9 +8,13 @@ export default class ApiClient {
 
     async get(endpoint, data) {
         const requestData = this.prepareRequest(data, endpoint)
+        let queryString = '';
+        if (data && Object.keys(data).length > 0) {
+            queryString = '&' + new URLSearchParams(data).toString();
+        }
         return this._fetch.request(
             () => {},
-            `${requestData.url}&` + new URLSearchParams(data).toString(),
+            `${requestData.url}${queryString}`,
             'GET',
             requestData.headers
         )
