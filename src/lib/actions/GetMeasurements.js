@@ -9,7 +9,10 @@ export class GetMeasurements {
     async execute(athleteId) {
         try {
             const data = {
-                deportista: athleteId
+                deportista: athleteId,
+                sort: 'fecha:desc',
+                per_page: 2,
+                page: 0
             };
             const remote = await this.apiClient.get('mediciones', data);
             return remote.mediciones;

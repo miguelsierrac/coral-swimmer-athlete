@@ -55,8 +55,6 @@
 				$lastSync = new Date();
 
 				if (measurements && measurements.length > 0) {
-					// Sort measurements by date to get the latest one
-					measurements.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 					const latestMeasurement = measurements[0];
 					const measurementValues = JSON.parse(latestMeasurement.valores);
 
