@@ -5,12 +5,13 @@
 	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { onMount, setContext } from 'svelte';
-	import { athlete, lastSync, token } from '$lib/stores.js';
+	import { athlete, lastSync, token, lastMeasurement } from '$lib/stores.js';
 	import { initializeApp } from 'firebase/app';
 	import { getAnalytics } from 'firebase/analytics';
 	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
 	import PushNotificationComponent from '$lib/components/PushNotification.svelte';
+	import CelebrationPopup from '$lib/components/CelebrationPopup.svelte';
 	import { openDB } from 'idb';
 
 	const firebaseConfig = {
@@ -45,6 +46,7 @@
 	setContext('athlete', athlete);
 	setContext('lastSync', lastSync);
 	setContext('token', token);
+	setContext('lastMeasurement', lastMeasurement);
 
 	const isNotificationSupported = () =>
 		'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
@@ -187,3 +189,5 @@
 <SvelteToast />
 
 <SvelteToast target="critical-notifications" />
+
+<CelebrationPopup />

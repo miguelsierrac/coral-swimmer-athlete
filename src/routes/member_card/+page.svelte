@@ -1,13 +1,15 @@
 <script>
 	import MemberCardScreen from '$lib/screens/MemberCardScreen.svelte';
-	import { onMount, onDestroy, getContext } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { AthleteNotFoundError } from '$lib/actions/GetAthlete';
+	import { popup } from '$lib/stores';
 
 	const provider = getContext('provider');
 	const redirect = getContext('redirect');
 	const athlete = getContext('athlete');
 	const lastSync = getContext('lastSync');
 	const token = getContext('token');
+	const lastMeasurement = getContext('lastMeasurement');
 
 	let stats = {};
 	let badges = [];
@@ -19,17 +21,7 @@
 		$lastSync = null;
 	};
 
-	function addHours(date, hours) {
-		console.log(date);
-		const hoursToAdd = hours * 60 * 60 * 1000;
-		date.setTime(date.getTime() + hoursToAdd);
-		console.log(date);
-		return date;
-	}
-
 	onMount(async () => {
-		let now = new Date();
-		console.log(now);
 		try {
 			if ($athlete) {
 				const [fetchedAthlete, information, measurements] = await Promise.all([
@@ -68,7 +60,11 @@
 					};
 
 					if ($athlete.tier === 'kids') {
-						// Extract level and badgeIds from the latest measurement
+						const lastMeasurementValues = $lastMeasurement
+							? JSON.parse($lastMeasurement.valores)
+							: null;
+						const oldLevel = lastMeasurementValues?.level;
+						const oldBadges = lastMeasurementValues?.badges;
 						const measurementLevel = measurementValues.level;
 						const badgeIds = measurementValues.badges;
 
@@ -78,9 +74,6 @@
 						]);
 						badges = allBadges.filter((badge) => badgeIds.includes(badge.id));
 						level = fetchedLevel;
-
-						console.log('Fetched badges from measurement:', badges);
-						console.log('Fetched level from measurement:', level);
 
 						stats = {
 							...stats,
@@ -92,6 +85,29 @@
 							),
 							levelCompletedSkills: measurementLevel.skills
 						};
+
+						const newAchievements = [];
+						if (oldLevel && level && oldLevel.id !== level.id) {
+							newAchievements.push({
+								name: level.name,
+								icon: level.icon,
+								type: 'level'
+							});
+						}
+						if (oldBadges && badges) {
+							const newBadges = badges.filter((badge) => !oldBadges.includes(badge.id));
+							newBadges.forEach((badge) => {
+								newAchievements.push({ name: badge.name, icon: badge.icon, type: 'badge' });
+							});
+						}
+
+						if (newAchievements.length > 0) {
+							$popup = {
+								title: '¡Felicitaciones!',
+								message: 'Has logrado nuevos hitos:',
+								achievements: newAchievements
+							};
+						}
 					} else if (['health','performance'].includes($athlete.tier)) {
 						stats = {
 							...stats,
@@ -101,13 +117,13 @@
 							hip: measurementValues.hip || null,
 							visceralFat: measurementValues.visceral || null
 						};
-						console.log('Health stats:', stats);
 					} else {
 						badges = [];
 						level = null;
 					}
+
+					$lastMeasurement = latestMeasurement;
 				} else {
-					// If no measurements, default to empty badges and null level
 					badges = [];
 					level = null;
 				}
@@ -121,7 +137,7 @@
 			}
 			console.error('Error during initial data fetch:', error);
 		} finally {
-			isLoading = false; // Set to false only after all async operations are attempted
+			isLoading = false;
 		}
 	});
 
