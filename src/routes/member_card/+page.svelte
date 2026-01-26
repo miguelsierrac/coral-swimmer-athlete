@@ -11,10 +11,16 @@
 	const token = getContext('token');
 	const lastMeasurement = getContext('lastMeasurement');
 
+	// Props for TechnicalSheet
 	let stats = {};
-	let badges = [];
-	let level = null;
+	let badges = []; // This will be derived from objectives
+	let level = null; // This will be the current level from gamification levels
 	let isLoading = true;
+
+	// New gamification data holders
+	let gamificationLevels = [];
+	let userGamificationProgress = null;
+	let leaderboardUsers = [];
 
 	const onLogOut = () => {
 		$athlete = null;
@@ -24,109 +30,102 @@
 	onMount(async () => {
 		try {
 			if ($athlete) {
-				const [fetchedAthlete, information, measurements] = await Promise.all([
-					provider.getAthlete.handle($athlete.identification),
-					provider.getInformation.handle($athlete.id).catch((error) => {
-						console.error('Error fetching information:', error);
-						return null;
-					}),
-					provider.getMeasurements.execute($athlete.id).catch((error) => {
-						console.error('Error fetching measurements:', error);
-						return [];
-					})
-				]);
+				const [fetchedAthlete, information, allLevels, measurements, leaderboardData] =
+					await Promise.all([
+						provider.getAthlete.handle($athlete.identification),
+						provider.getInformation.handle($athlete.id).catch((error) => {
+							console.error('Error fetching information:', error);
+							return null; // Gracefully handle if info fails
+						}),
+						provider.getGamificationData.getLevels(
+							$athlete.tier === 'kids' ? 'kids' : 'adults'
+						),
+						provider.getGamificationData.getMeasurements($athlete.id),
+						provider.getGamificationData.getLeaderboardData($athlete.tier)
+					]);
+
+				// 1. Update core athlete data
 				$athlete = fetchedAthlete;
 				if (information) {
 					$athlete.total_distance = information.total_distance;
 				}
 
+				// Token sync
 				if ($token && $athlete.token !== $token) {
 					$athlete.token = $token;
 					await provider.saveToken.handle($athlete);
 				}
 				$lastSync = new Date();
 
-				if (measurements && measurements.length > 0) {
-					const latestMeasurement = measurements[0];
-					const measurementValues = JSON.parse(latestMeasurement.valores);
+				// 2. Process gamification data
+				gamificationLevels = allLevels;
+				userGamificationProgress = measurements;
+				leaderboardUsers = leaderboardData;
 
+				if (userGamificationProgress) {
+					// Find the athlete's current level object
+					level =
+						gamificationLevels.find(
+							(l) => l.id === userGamificationProgress.nivel_actual_id
+						) || null;
+
+					// Derive `badges` from the objectives of the current level
+					if (level) {
+						badges = level.objetivos.map((obj) => ({
+							...obj,
+							progress: userGamificationProgress.progreso_objetivos[obj.id] || null
+						}));
+					}
+
+					// 3. Populate `stats` for the TechnicalSheet
 					stats = {
-						measurementDate: new Date(latestMeasurement.fecha),
-						height: measurementValues.height || null,
-						weight: measurementValues.weight || null,
-						bmi: measurementValues.bmi || null,
-						bodyFat: measurementValues.bodyFat || null,
-						muscleMass: measurementValues.muscleMass || null
+						measurementDate: new Date(), // The new measurement endpoint doesn't bring a date, using current
+						height: userGamificationProgress.height || null,
+						weight: userGamificationProgress.weight || null
 					};
 
 					if ($athlete.tier === 'kids') {
-						const lastMeasurementValues = $lastMeasurement
-							? JSON.parse($lastMeasurement.valores)
-							: null;
-						const oldLevel = lastMeasurementValues?.level;
-						const oldBadges = lastMeasurementValues?.badges;
-						const measurementLevel = measurementValues.level;
-						const badgeIds = measurementValues.badges;
-
-						const [allBadges, fetchedLevel] = await Promise.all([
-							provider.getAllBadges.handle(),
-							provider.getLevel.handle(measurementLevel.id)
-						]);
-						badges = allBadges.filter((badge) => badgeIds.includes(badge.id));
-						level = fetchedLevel;
+						const totalObjectives = level ? level.objetivos.length : 0;
+						const completedObjectives = Object.values(
+							userGamificationProgress.progreso_objetivos
+						).filter((p) => p !== null).length;
 
 						stats = {
 							...stats,
-							levelName: fetchedLevel.name,
-							levelIcon: fetchedLevel.icon,
-							levelColor: fetchedLevel.color,
-							levelProgress: Math.round(
-								(measurementLevel.skills.length / fetchedLevel.skills.length) * 100
-							),
-							levelCompletedSkills: measurementLevel.skills
+							levelName: level?.nombre,
+							levelIcon: level?.icono,
+							levelColor: level?.color,
+							levelProgress:
+								totalObjectives > 0
+									? Math.round((completedObjectives / totalObjectives) * 100)
+									: 0
 						};
+					} else if (['health', 'performance'].includes($athlete.tier)) {
+						const totalObjectives = level ? level.objetivos.length : 0;
+						const completedObjectives = Object.values(
+							userGamificationProgress.progreso_objetivos
+						).filter((p) => p !== null).length;
 
-						const newAchievements = [];
-						if (oldLevel && level && oldLevel.id !== level.id) {
-							newAchievements.push({
-								name: level.name,
-								icon: level.icon,
-								type: 'level'
-							});
-						}
-						if (oldBadges && badges) {
-							const newBadges = badges.filter((badge) => !oldBadges.includes(badge.id));
-							newBadges.forEach((badge) => {
-								newAchievements.push({ name: badge.name, icon: badge.icon, type: 'badge' });
-							});
-						}
-
-						if (newAchievements.length > 0) {
-							$popup = {
-								title: '¡Felicitaciones!',
-								message: 'Has logrado nuevos hitos:',
-								achievements: newAchievements
-							};
-						}
-					} else if (['health','performance'].includes($athlete.tier)) {
 						stats = {
 							...stats,
-							fatPercentage: measurementValues.fat || null,
-							musclePercentage: measurementValues.muscle || null,
-							waist: measurementValues.waist || null,
-							hip: measurementValues.hip || null,
-							visceralFat: measurementValues.visceral || null
+							fatPercentage: userGamificationProgress.fat_percentage || null,
+							musclePercentage: userGamificationProgress.muscle_percentage || null,
+							waist: userGamificationProgress.biometrics?.waist || null,
+							hip: userGamificationProgress.biometrics?.hip || null,
+							visceralFat: userGamificationProgress.biometrics?.visceral || null,
+							specialty: userGamificationProgress.specialty || null,
+							levelName: level?.nombre,
+							levelIcon: level?.icono,
+							levelColor: level?.color,
+							levelProgress:
+								totalObjectives > 0
+									? Math.round((completedObjectives / totalObjectives) * 100)
+									: 0
 						};
-					} else {
-						badges = [];
-						level = null;
 					}
-
-					$lastMeasurement = latestMeasurement;
-				} else {
-					badges = [];
-					level = null;
 				}
+
+				// TODO: Handle celebration popup logic with new data structures
 			}
 		} catch (error) {
 			if (error instanceof AthleteNotFoundError) {
@@ -136,6 +135,11 @@
 				return;
 			}
 			console.error('Error during initial data fetch:', error);
+			// Optionally show a user-facing error message
+			popup.set({
+				title: 'Error',
+				message: 'No se pudieron cargar los datos. Inténtalo de nuevo más tarde.'
+			});
 		} finally {
 			isLoading = false;
 		}
@@ -148,4 +152,14 @@
 	}
 </script>
 
-<MemberCardScreen bind:athlete={$athlete} {onLogOut} {badges} {level} {stats} {isLoading} />
+<MemberCardScreen
+    bind:athlete={$athlete}
+    {onLogOut}
+    {badges}
+    {level}
+    {stats}
+    {isLoading}
+    {leaderboardUsers}
+    {gamificationLevels}
+    currentUserID={$athlete.id}
+/>

@@ -4,6 +4,7 @@ import { GetInformation } from "$lib/actions/GetInformation";
 import { GetLevel } from "$lib/actions/GetLevel";
 import { GetAllBadges } from "$lib/actions/GetAllBadges";
 import { GetMeasurements } from "$lib/actions/GetMeasurements";
+import { GetGamificationData } from "$lib/actions/GetGamificationData";
 import ApiClient from "$lib/infrastructure/APIClient";
 import { Request } from "$lib/infrastructure/Request";
 
@@ -16,5 +17,6 @@ export default {
     getInformation: new GetInformation(apiClient),
     getLevel: new GetLevel(apiClient),
     getAllBadges: new GetAllBadges(apiClient),
-    getMeasurements: new GetMeasurements(apiClient)
+    getMeasurements: new GetMeasurements(apiClient),
+    getGamificationData: new GetGamificationData(apiClient)
 }
