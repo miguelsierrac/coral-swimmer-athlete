@@ -105,12 +105,12 @@ export class GetGamificationData {
     }
 
     /**
-     * Fetches leaderboard data filtered by tier.
-     * @param {string} tier - The tier to filter by (kids, health, performance, etc.)
+     * Fetches leaderboard data filtered by level ID.
+     * @param {number} id_nivel - The level ID to filter by.
      * @returns {Promise<any[]>}
      */
-    async getLeaderboardData(tier) {
-        const remoteData = await this._apiClient.get('clasificacion', { 'tier': tier });
+    async getLeaderboardData(id_nivel) {
+        const remoteData = await this._apiClient.get('clasificacion', { 'id_nivel': id_nivel });
         if (!remoteData || !Array.isArray(remoteData.clasificacion)) {
             return [];
         }

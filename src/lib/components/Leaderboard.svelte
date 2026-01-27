@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, getContext } from 'svelte';
   import Badge from '$lib/components/Badge.svelte';
   import BadgePopover from '$lib/components/BadgePopover.svelte';
 
@@ -11,25 +11,50 @@
   export let userLevel = null; // Current level object
   export let specialty = null; // Optional specialty info
 
+  const provider = getContext('provider');
   let rankedUsers = [];
   let selectedLevelId = null;
   let activeTab = 'ranking'; // 'ranking' or 'badges'
   let selectedBadge = null;
   let popoverPosition = { top: 0, left: 0 };
+  let leaderboardData = [];
+  let isLoadingLeaderboard = false;
 
   onMount(() => {
     selectedLevelId = currentUserLevelId;
+    leaderboardData = users;
   });
 
   $: {
-    if (selectedLevelId) {
-      rankedUsers = users
-        .filter(u => u.level_id === selectedLevelId)
-        .sort((a, b) => b.score - a.score)
+    if (selectedLevelId && provider) {
+      if (selectedLevelId !== currentUserLevelId || users.length === 0) {
+        isLoadingLeaderboard = true;
+        provider.getGamificationData.getLeaderboardData(selectedLevelId)
+          .then(newUsers => {
+            leaderboardData = newUsers;
+          })
+          .catch(err => {
+            console.error('Failed to load leaderboard for level ' + selectedLevelId, err);
+            leaderboardData = []; // Clear data on error
+          })
+          .finally(() => {
+            isLoadingLeaderboard = false;
+          });
+      } else {
+        leaderboardData = users; // Restore initial data when switching back
+      }
+    }
+  }
+
+  $: {
+    if (leaderboardData) {
+      rankedUsers = leaderboardData
         .map((user, index) => ({
           ...user,
           rank: index + 1
         }));
+    } else {
+      rankedUsers = [];
     }
   }
 
@@ -43,9 +68,12 @@
 
   const medalIcons = ['🥇', '🥈', '🥉'];
   
-  function getAvatarUrl(userId) {
-    // Generate consistent avatar based on user id
-    const seed = typeof userId === 'string' ? parseInt(userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) : userId;
+  function getAvatarUrl(user) {
+    if (user.foto_deportista) {
+      return user.foto_deportista;
+    }
+    // Generate consistent avatar based on user name
+    const seed = user.nombre_deportista && user.apellido_deportista ? (user.nombre_deportista + user.apellido_deportista).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : Math.random() * 100;
     return `https://i.pravatar.cc/100?img=${(seed % 70) + 1}`;
   }
   
@@ -90,7 +118,7 @@
       <div class="ranking-header">
         <h3>
           Ranking Nivel 
-          <span class="level-tag" style="background: {currentLevel?.color || '#4285F4'};">{currentLevel?.icono || ''} {currentLevel?.nombre || ''}</span>
+          <span class="level-tag" style="background: {currentLevel?.color || '#4285F4'};">{rankedUsers[0]?.icono_nivel || currentLevel?.icono || ''} {rankedUsers[0]?.nombre_nivel || currentLevel?.nombre || ''}</span>
           {#if userLevel && userLevel.id !== selectedLevelId}
             <span class="user-level-chip" style="background: {userLevel.color};">{userLevel.icono} Tu nivel</span>
           {/if}
@@ -104,38 +132,46 @@
             class="level-tab" 
             class:active={selectedLevelId === level.id}
             on:click={() => selectedLevelId = level.id}
+            disabled={isLoadingLeaderboard}
           >
             {level.icono} {level.nombre}
           </button>
         {/each}
       </div>
       
-      <ul class="leaderboard-list">
-        {#each rankedUsers as user (user.id)}
-          <li class="rank-item" class:current-user={user.id === currentUserID}>
-            <span class="rank-pos" class:top-3={user.rank <= 3}>
-              {#if user.rank <= 3}
-                {medalIcons[user.rank - 1]}
-              {:else}
-                {user.rank}
-              {/if}
-            </span>
-
-            <img src={getAvatarUrl(user.id)} alt="Avatar" class="rank-avatar" />
-
-            <div class="rank-info">
-              <span class="rank-name">
-                {user.forename} {user.surname}
-                <small class="rank-level-icon">{user.level_icon}</small>
+      {#if isLoadingLeaderboard}
+        <div class="loader-container">
+          <div class="loader"></div>
+          <p>Cargando ranking...</p>
+        </div>
+      {:else}
+        <ul class="leaderboard-list">
+          {#each rankedUsers as user, i (user.id_deportista || i)}
+            <li class="rank-item" class:current-user={user.id_deportista == currentUserID}>
+              <span class="rank-pos" class:top-3={user.rank <= 3}>
+                {#if user.rank <= 3}
+                  {medalIcons[user.rank - 1]}
+                {:else}
+                  {user.rank}
+                {/if}
               </span>
-            </div>
 
-            <span class="rank-score">
-              {new Intl.NumberFormat('es-ES').format(user.score)}
-            </span>
-          </li>
-        {/each}
-      </ul>
+              <img src={getAvatarUrl(user)} alt="Avatar" class="rank-avatar" />
+
+              <div class="rank-info">
+                <span class="rank-name">
+                  {user.nombre_deportista} {user.apellido_deportista}
+                  <small class="rank-level-icon">{user.icono_nivel}</small>
+                </span>
+              </div>
+
+              <span class="rank-score">
+                {new Intl.NumberFormat('es-ES').format(user.puntaje_total)}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
     {:else}
       <!-- Tab de Mis Logros -->
       <div class="level-hero" style="--lvl-color: {userLevel?.color || '#4285F4'};">
@@ -191,6 +227,28 @@
 {/if}
 
 <style>
+  .loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+  }
+  .loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4285F4;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
   .leaderboard-container {
     background: white;
     border-radius: 0;
@@ -310,6 +368,11 @@
     font-weight: 600;
     color: #555;
     transition: all 0.2s ease;
+  }
+  
+  .level-tab:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   
   .level-tab.active {
@@ -601,5 +664,101 @@
     z-index: 251;
     transform: translate(-50%, -50%);
     transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 480px) {
+    .modal-header {
+      padding: 15px 15px 0;
+    }
+    .modal-header h2 {
+      font-size: 18px;
+    }
+    .tabs-nav {
+      padding: 10px 15px 0;
+    }
+    .tab-btn {
+      padding: 10px;
+      font-size: 13px;
+    }
+    .tab-content {
+      padding: 15px;
+      height: calc(100vh - 140px);
+    }
+    .ranking-header h3 {
+      font-size: 16px;
+      gap: 6px;
+    }
+    .level-tag {
+      padding: 3px 10px;
+      font-size: 11px;
+    }
+
+    .level-filter {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+      padding-bottom: 8px; /* For shadow visibility */
+    }
+    .level-filter::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
+    }
+    .level-tab {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .rank-item {
+      padding: 8px 10px;
+      border-radius: 12px;
+    }
+    .rank-avatar {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+    .rank-pos {
+      width: 25px;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    .rank-pos.top-3 {
+      font-size: 20px;
+    }
+    .rank-name {
+      font-size: 13px;
+    }
+    .rank-score {
+      font-size: 15px;
+    }
+    
+    /* Achievements Tab */
+    .level-hero {
+      padding: 15px;
+      border-radius: 16px;
+    }
+    .level-icon-large {
+      width: 60px;
+      height: 60px;
+      font-size: 36px;
+    }
+    .level-title {
+      font-size: 18px;
+    }
+    .level-desc {
+      font-size: 13px;
+      margin: 8px 0 15px;
+    }
+    .badges-section h4 {
+      font-size: 15px;
+    }
+    .badge-grid-compact {
+      gap: 12px;
+    }
+    .badge-item-compact {
+      border-radius: 16px;
+    }
   }
 </style>

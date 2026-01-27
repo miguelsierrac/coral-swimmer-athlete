@@ -30,7 +30,7 @@
 	onMount(async () => {
 		try {
 			if ($athlete) {
-				const [fetchedAthlete, information, allLevels, measurements, leaderboardData] =
+				const [fetchedAthlete, information, allLevels, measurements] =
 					await Promise.all([
 						provider.getAthlete.handle($athlete.identification),
 						provider.getInformation.handle($athlete.id).catch((error) => {
@@ -40,8 +40,7 @@
 						provider.getGamificationData.getLevels(
 							$athlete.tier === 'kids' ? 'kids' : 'adults'
 						),
-						provider.getGamificationData.getMeasurements($athlete.id),
-						provider.getGamificationData.getLeaderboardData($athlete.tier)
+						provider.getGamificationData.getMeasurements($athlete.id)
 					]);
 
 				// 1. Update core athlete data
@@ -60,7 +59,6 @@
 				// 2. Process gamification data
 				gamificationLevels = allLevels;
 				userGamificationProgress = measurements;
-				leaderboardUsers = leaderboardData;
 
 				if (userGamificationProgress) {
 					// Find the athlete's current level object
@@ -68,6 +66,11 @@
 						gamificationLevels.find(
 							(l) => l.id === userGamificationProgress.nivel_actual_id
 						) || null;
+					
+					if (level) {
+						leaderboardUsers = await provider.getGamificationData.getLeaderboardData(level.id);
+
+					}
 
 					// Derive `badges` from the objectives of the current level
 					if (level) {

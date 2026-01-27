@@ -9,6 +9,9 @@
 	export let level = null;
 	export let stats = {};
 	export let isLoading = false;
+	export let leaderboardUsers = [];
+	export let gamificationLevels = [];
+	export let currentUserID;
 
 	let isFlipped = false;
 
@@ -350,7 +353,17 @@
 
 				<!-- CARA TRASERA -->
 				<div class="card-face card-back">
-					<TechnicalSheet tier={athlete.tier} {stats} {badges} {level} {isLoading} on:flip={() => (isFlipped = !isFlipped)} />
+					<TechnicalSheet
+						tier={athlete.tier}
+						{stats}
+						{badges}
+						{level}
+						{isLoading}
+						{leaderboardUsers}
+						allLevels={gamificationLevels}
+						{currentUserID}
+						on:flip={() => (isFlipped = !isFlipped)}
+					/>
 				</div>
 			</div>
 		</div>
