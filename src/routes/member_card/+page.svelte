@@ -128,7 +128,65 @@
 					}
 				}
 
-				// TODO: Handle celebration popup logic with new data structures
+				if (userGamificationProgress && $lastMeasurement) {
+					const newAchievements = [];
+					const previousLevelId = $lastMeasurement.nivel_actual_id;
+					const currentLevelId = userGamificationProgress.nivel_actual_id;
+
+					// 1. Check for level up
+					if (currentLevelId && previousLevelId && currentLevelId !== previousLevelId) {
+						const newLevel = gamificationLevels.find(l => l.id === currentLevelId);
+						const oldLevel = gamificationLevels.find(l => l.id === previousLevelId);
+						// Assuming higher ID means higher level
+						if (newLevel && oldLevel && newLevel.id > oldLevel.id) {
+							newAchievements.push({
+								type: 'level',
+								name: newLevel.nombre,
+								icon: newLevel.icono
+							});
+						}
+					}
+
+					// 2. Check for new/upgraded badges
+					const previousProgress = $lastMeasurement.progreso_objetivos || {};
+					const currentProgress = userGamificationProgress.progreso_objetivos || {};
+					const gradeValues = { 'bronce': 1, 'plata': 2, 'oro': 3 };
+
+					const allObjectives = gamificationLevels.flatMap(l => l.objetivos);
+
+					for (const objectiveId in currentProgress) {
+						const previousGrade = previousProgress[objectiveId];
+						const currentGrade = currentProgress[objectiveId];
+
+						if (currentGrade) { // Only consider if there is a grade
+							const previousValue = previousGrade ? gradeValues[previousGrade] : 0;
+							const currentValue = gradeValues[currentGrade];
+
+							if (currentValue > previousValue) {
+								const objective = allObjectives.find(o => o.id === objectiveId);
+								if (objective) {
+									newAchievements.push({
+										type: 'badge',
+										name: `${objective.nombre} (${currentGrade})`,
+										icon: objective.icono
+									});
+								}
+							}
+						}
+					}
+					
+					// 3. Trigger popup
+					if (newAchievements.length > 0) {
+						popup.set({
+							title: '¡Felicidades!',
+							message: '¡Has alcanzado nuevos logros!',
+							achievements: newAchievements
+						});
+					}
+				}
+
+				// Update last measurement for the next sync
+				$lastMeasurement = userGamificationProgress;
 			}
 		} catch (error) {
 			if (error instanceof AthleteNotFoundError) {
