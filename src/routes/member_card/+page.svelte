@@ -222,5 +222,5 @@
     {isLoading}
     {leaderboardUsers}
     {gamificationLevels}
-    currentUserID={$athlete.id}
+    currentUserID={$athlete?.id}
 />
