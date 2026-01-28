@@ -70,8 +70,6 @@
 	}
 </script>
 
-
-
 {#if showSkillsPopup && level && level.skills}
 	<div class="popup-overlay" on:click={() => (showSkillsPopup = false)}>
 		<div class="popup-content" on:click|stopPropagation>
@@ -103,8 +101,16 @@
 			<div class="badge-grid">
 				{#if badges && badges.length > 0}
 					{#each badges as badge (badge.id)}
-						{@const gradeClass = badge.progress ? `badge-slot-${badge.progress}` : 'badge-slot-locked'}
-						<div class="badge-slot {gradeClass}" on:click={(e) => { e.stopPropagation(); handleBadgeClick(e, badge); }}>
+						{@const gradeClass = badge.progress
+							? `badge-slot-${badge.progress}`
+							: 'badge-slot-locked'}
+						<div
+							class="badge-slot {gradeClass}"
+							on:click={(e) => {
+								e.stopPropagation();
+								handleBadgeClick(e, badge);
+							}}
+						>
 							{#if badge.progress}
 								<div class="tier-dot tier-{badge.progress}"></div>
 							{/if}
@@ -167,61 +173,40 @@
 			</div>
 		</div>
 
-		{#if isKids}
+		{#if isLoading}
+			<div class="level-card-container">
+				<div class="comp-card skeleton centered"></div>
+			</div>
+		{:else if isKids}
 			<!-- VISTA NIÑOS -->
 			<div class="kids-data-wrapper">
-				{#if isLoading}
-					<div class="level-card-container">
-						<div class="comp-card skeleton centered"></div>
-					</div>
-				{:else}
-					<div class="level-card-container">
-						<div 
-							class="level-card-header" 
-							on:click={toggleObjectivesPopup}
-							style="background: {stats.levelColor};"
-						>
-							<div class="level-ring-container">
-								<div class="donut-ring" style="border-top-color: {stats.levelColor === '#34495E' ? '#FFC107' : 'rgba(255,255,255,0.9)'}; border-right-color: {stats.levelColor === '#34495E' ? '#FFC107' : 'rgba(255,255,255,0.9)'};" ></div>
-								<span class="level-icon-large">{stats.levelIcon}</span>
-							</div>
-							<h3 class="level-name-header">Nivel {stats.levelName}</h3>
-							<span class="xp-pill">{stats.levelProgress}% Completado • {(badges || []).length} objetivos</span>
+				<div class="level-card-container">
+					<div
+						class="level-card-header"
+						on:click={toggleObjectivesPopup}
+						style="background: {stats.levelColor};"
+					>
+						<div class="level-ring-container">
+							<div
+								class="donut-ring"
+								style="border-top-color: {stats.levelColor === '#34495E'
+									? '#FFC107'
+									: 'rgba(255,255,255,0.9)'}; border-right-color: {stats.levelColor === '#34495E'
+									? '#FFC107'
+									: 'rgba(255,255,255,0.9)'};"
+							></div>
+							<span class="level-icon-large">{stats.levelIcon}</span>
 						</div>
+						<h3 class="level-name-header">Nivel {stats.levelName}</h3>
+						<span class="xp-pill"
+							>{stats.levelProgress}% Completado • {(badges || []).length} objetivos</span
+						>
 					</div>
-				{/if}
+				</div>
 			</div>
 		{:else}
 			<!-- VISTA ADULTOS -->
 			<div class="adult-data-wrapper">
-				{#if !isLoading && stats.levelName}
-					<div class="level-card-container">
-						<div 
-							class="level-card-header-compact" 
-							on:click={toggleObjectivesPopup}
-							style="background: {stats.levelColor};"
-						>
-							<div class="level-header-content">
-								<span class="level-icon-compact">{stats.levelIcon}</span>
-								<div class="level-info-compact">
-									<h4 class="level-name-compact">Nivel {stats.levelName}</h4>
-									<span class="level-progress-compact">{stats.levelProgress}% Completado</span>
-								</div>
-							</div>
-							{#if stats.specialty}
-								<div class="specialty-chips-inline">
-									<div class="specialty-chip-inline tool-chip">
-										{stats.specialty.tool === 'Monoaleta' ? '🧜' : '🏊'} {stats.specialty.tool}
-									</div>
-									<div class="specialty-chip-inline mode-chip">
-										{stats.specialty.mode === 'Velocidad' ? '🏎️' : '🔋'} {stats.specialty.mode}
-									</div>
-								</div>
-							{/if}
-						</div>
-					</div>
-				{/if}
-
 				<div class="composition-container">
 					<div class="comp-card">
 						<div
@@ -262,54 +247,89 @@
 						>
 					</div>
 				</div>
+
+				{#if !isLoading && stats.levelName}
+					<div class="level-card-container">
+						<div
+							class="level-card-header-compact"
+							on:click={toggleObjectivesPopup}
+							style="background: {stats.levelColor};"
+						>
+							<div class="level-header-content">
+								<span class="level-icon-compact">{stats.levelIcon}</span>
+								<div class="level-info-compact">
+									<h4 class="level-name-compact">Nivel {stats.levelName}</h4>
+									<span class="level-progress-compact">{stats.levelProgress}% Completado</span>
+								</div>
+							</div>
+							{#if stats.specialty}
+								<div class="specialty-chips-inline">
+									<div class="specialty-chip-inline tool-chip">
+										{stats.specialty.tool === 'Monoaleta' ? '🧜' : '🏊'}
+										{stats.specialty.tool}
+									</div>
+									<div class="specialty-chip-inline mode-chip">
+										{stats.specialty.mode === 'Velocidad' ? '🏎️' : '🔋'}
+										{stats.specialty.mode}
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
 		{#if selectedBadge}
 			<div class="popover-backdrop" on:click={closePopover}></div>
-			<div class="popover-container" style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;">
+			<div
+				class="popover-container"
+				style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
+			>
 				<BadgePopover badge={selectedBadge} progress={selectedBadge.progress} />
 			</div>
 		{/if}
 
-		<!-- SECCIÓN LEADERBOARD -->
-		<div class="leaderboard-section">
-			{#if tier === 'standard'}
-				<div class="leaderboard-upsell">
-					<div class="lock-icon">🔒</div>
-					<div class="upsell-text">
-						<h4>Ranking Exclusivo</h4>
-						<p>Actualiza a Premium para ver tu posición y competir.</p>
-						<button class="btn-upgrade">Mejorar Plan</button>
+		{#if !isLoading && stats.levelName}
+			<!-- SECCIÓN LEADERBOARD -->
+			<div class="leaderboard-section">
+				{#if tier === 'standard'}
+					<div class="leaderboard-upsell">
+						<div class="lock-icon">🔒</div>
+						<div class="upsell-text">
+							<h4>Ranking Exclusivo</h4>
+							<p>Actualiza a Premium para ver tu posición y competir.</p>
+							<button class="btn-upgrade">Mejorar Plan</button>
+						</div>
 					</div>
-				</div>
-			{:else}
-				<div class="leaderboard-cta" on:click={toggleLeaderboard}>
-					<div class="cta-icon">🏆</div>
-					<div class="cta-text">
-						<h4>Tabla de Posiciones</h4>
-						<p>¡Compite y mide tu progreso!</p>
+				{:else}
+					<div class="leaderboard-cta" on:click={toggleLeaderboard}>
+						<div class="cta-icon">🏆</div>
+						<div class="cta-text">
+							<h4>Tabla de Posiciones</h4>
+							<p>¡Compite y mide tu progreso!</p>
+						</div>
+						<div class="cta-arrow">›</div>
 					</div>
-					<div class="cta-arrow">›</div>
+				{/if}
+			</div>
+
+			{#if showLeaderboard}
+				<div class="leaderboard-modal-overlay" on:click={toggleLeaderboard}>
+					<div class="leaderboard-modal-content" on:click|stopPropagation>
+						<button class="popup-close" on:click={toggleLeaderboard}>&times;</button>
+						<Leaderboard
+							users={leaderboardUsers}
+							{allLevels}
+							{currentUserID}
+							currentUserLevelId={level ? level.id : null}
+							{badges}
+							userLevel={level}
+							specialty={stats.specialty}
+						/>
+					</div>
 				</div>
 			{/if}
-		</div>
-
-		{#if showLeaderboard}
-			<div class="leaderboard-modal-overlay" on:click={toggleLeaderboard}>
-				<div class="leaderboard-modal-content" on:click|stopPropagation>
-					<button class="popup-close" on:click={toggleLeaderboard}>&times;</button>
-					<Leaderboard
-						users={leaderboardUsers}
-						{allLevels}
-						{currentUserID}
-						currentUserLevelId={level ? level.id : null}
-						{badges}
-						userLevel={level}
-						specialty={stats.specialty}
-					/>
-				</div>
-			</div>
 		{/if}
 
 		<!-- SECCIÓN PERFORMANCE (Con bloqueo) -->
@@ -318,6 +338,7 @@
 				<div class="lock-overlay">
 					<div class="lock-icon">🔒</div>
 					<div class="lock-text">Plan Alto Rendimiento</div>
+					<div class="lock-subtext">Desbloquea tu máximo potencial.</div>
 				</div>
 			{/if}
 
@@ -547,7 +568,7 @@
 	}
 	.level-card-header {
 		width: 100%;
-		background: var(--shark-color, #34495E);
+		background: var(--shark-color, #34495e);
 		color: white;
 		padding: 12px 20px;
 		text-align: center;
@@ -563,7 +584,7 @@
 	}
 	.level-card-header-compact {
 		width: 100%;
-		background: var(--level-color, #34495E);
+		background: var(--level-color, #34495e);
 		color: white;
 		padding: 12px 16px;
 		border-radius: 16px;
@@ -802,7 +823,9 @@
 		position: fixed;
 		z-index: 251;
 		transform: translate(-50%, -50%);
-		transition: transform 0.2s ease, opacity 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			opacity 0.2s ease;
 	}
 	.lock-overlay {
 		position: absolute;
@@ -838,6 +861,11 @@
 		padding: 4px 10px;
 		border-radius: 12px;
 		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+	}
+	.lock-subtext {
+		font-size: 8px;
+		color: #666;
+		margin-top: 2px;
 	}
 	.chart-section {
 		margin-bottom: 8px;
@@ -969,7 +997,7 @@
 	.popup-close:hover {
 		background: #f5f5f5;
 		color: #333;
-		border-color: #4285F4;
+		border-color: #4285f4;
 		transform: scale(1.1);
 	}
 	.popup-content h3 {
@@ -1058,7 +1086,8 @@
 		margin-top: 10px;
 		margin-bottom: 10px;
 	}
-	.leaderboard-upsell, .leaderboard-cta {
+	.leaderboard-upsell,
+	.leaderboard-cta {
 		border-radius: 16px;
 		padding: 10px 12px;
 		display: flex;
@@ -1091,7 +1120,7 @@
 		cursor: pointer;
 	}
 	.leaderboard-cta {
-		background: linear-gradient(135deg, #4285F4, #3c78d8);
+		background: linear-gradient(135deg, #4285f4, #3c78d8);
 		color: white;
 		box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
 	}
@@ -1121,7 +1150,7 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: rgba(0,0,0,0.6);
+		background: rgba(0, 0, 0, 0.6);
 		z-index: 998;
 		display: flex;
 		align-items: center;
