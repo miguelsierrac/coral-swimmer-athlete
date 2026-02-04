@@ -9,13 +9,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-com
 // your app's Firebase config object.
 // https://firebase.google.com/docs/web/setup#config-object
 firebase.initializeApp({
-    apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
-    authDomain: 'coral-swimmer.firebaseapp.com',
-    projectId: 'coral-swimmer',
-    storageBucket: 'coral-swimmer.appspot.com',
-    messagingSenderId: '528677262049',
-    appId: '1:528677262049:web:89c2b229471e4cef505da0',
-    measurementId: 'G-Q61LGSCMEX'
+	apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
+	authDomain: 'coral-swimmer.firebaseapp.com',
+	projectId: 'coral-swimmer',
+	storageBucket: 'coral-swimmer.appspot.com',
+	messagingSenderId: '528677262049',
+	appId: '1:528677262049:web:89c2b229471e4cef505da0',
+	measurementId: 'G-Q61LGSCMEX'
 });
 
 // Retrieve an instance of Firebase Messaging so that it can handle background
@@ -23,40 +23,37 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-    console.log(
-        '[firebase-messaging-sw.js] Received background message ',
-        payload
-    );
+	console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-    const dbPromise = indexedDB.open('coral-swimmer-athlete', 1);
+	const dbPromise = indexedDB.open('coral-swimmer-athlete', 1);
 
-    dbPromise.onsuccess = (event) => {
-        try {
-            const db = event.target.result;
-            const transaction = db.transaction('notifications', 'readwrite');
-            const store = transaction.objectStore('notifications');
-            store.add(payload);
-        } catch (error) {
-            console.error('Error adding notification to DB:', error);
-        }
-    };
+	dbPromise.onsuccess = (event) => {
+		try {
+			const db = event.target.result;
+			const transaction = db.transaction('notifications', 'readwrite');
+			const store = transaction.objectStore('notifications');
+			store.add(payload);
+		} catch (error) {
+			console.error('Error adding notification to DB:', error);
+		}
+	};
 
-    if (payload.notification) {
-        console.log('Notification payload received:', payload.notification);
-        return;
-    }
-    
-    if (!payload.data || !payload.data.title || !payload.data.body) {
-        console.error('Invalid payload data:', payload.data);
-        return;
-    }
+	if (payload.notification) {
+		console.log('Notification payload received:', payload.notification);
+		return;
+	}
 
-    // Customize notification here
-    const notificationTitle = payload.data.title;
-    const notificationOptions = {
-        body: payload.data.body,
-        icon: '/coral-swimmer-athlete/logo_512.png'
-    };
+	if (!payload.data || !payload.data.title || !payload.data.body) {
+		console.error('Invalid payload data:', payload.data);
+		return;
+	}
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+	// Customize notification here
+	const notificationTitle = payload.data.title;
+	const notificationOptions = {
+		body: payload.data.body,
+		icon: '/coral-swimmer-athlete/logo_512.png'
+	};
+
+	self.registration.showNotification(notificationTitle, notificationOptions);
 });

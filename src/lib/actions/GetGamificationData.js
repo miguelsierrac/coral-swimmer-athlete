@@ -56,103 +56,107 @@
  * @property {string} valores // JSON string
  */
 
-
 export class GetGamificationData {
-    _apiClient;
+	_apiClient;
 
-    /**
-     * @param {import('../infrastructure/APIClient').default} apiClient
-     */
-    constructor(apiClient) {
-        this._apiClient = apiClient;
-    }
+	/**
+	 * @param {import('../infrastructure/APIClient').default} apiClient
+	 */
+	constructor(apiClient) {
+		this._apiClient = apiClient;
+	}
 
-    /**
-     * Fetches and parses all levels, filtering by plan.
-     * @param {Plan} plan
-     * @returns {Promise<Level[]>}
-     */
-    async getLevels(plan) {
-        const remoteLevels = await this._apiClient.get('niveles');
-        if (!remoteLevels || !Array.isArray(remoteLevels.niveles)) {
-            return [];
-        }
+	/**
+	 * Fetches and parses all levels, filtering by plan.
+	 * @param {Plan} plan
+	 * @returns {Promise<Level[]>}
+	 */
+	async getLevels(plan) {
+		const remoteLevels = await this._apiClient.get('niveles');
+		if (!remoteLevels || !Array.isArray(remoteLevels.niveles)) {
+			return [];
+		}
 
-        return remoteLevels.niveles
-            .filter(level => level.plan === plan)
-            .map(level => ({
-                ...level,
-                objetivos: this._parseLevelObjectives(level.objetivos)
-            }));
-    }
+		return remoteLevels.niveles
+			.filter((level) => level.plan === plan)
+			.map((level) => ({
+				...level,
+				objetivos: this._parseLevelObjectives(level.objetivos)
+			}));
+	}
 
-    /**
-     * Fetches the latest measurement for a given athlete and parses its values.
-     * @param {string} athleteId
-     * @returns {Promise<MeasurementValues|null>}
-     */
-    async getMeasurements(athleteId) {
-        const remoteMeasurements = await this._apiClient.get('mediciones', { 'deportista': athleteId });
+	/**
+	 * Fetches the latest measurement for a given athlete and parses its values.
+	 * @param {string} athleteId
+	 * @returns {Promise<MeasurementValues|null>}
+	 */
+	async getMeasurements(athleteId) {
+		const remoteMeasurements = await this._apiClient.get('mediciones', { deportista: athleteId });
 
-        if (!remoteMeasurements || !Array.isArray(remoteMeasurements.mediciones) || remoteMeasurements.mediciones.length === 0) {
-            return null;
-        }
+		if (
+			!remoteMeasurements ||
+			!Array.isArray(remoteMeasurements.mediciones) ||
+			remoteMeasurements.mediciones.length === 0
+		) {
+			return null;
+		}
 
-        // Assuming the last one is the most recent
-        const latestMeasurement = remoteMeasurements.mediciones[remoteMeasurements.mediciones.length - 1];
+		// Assuming the last one is the most recent
+		const latestMeasurement =
+			remoteMeasurements.mediciones[remoteMeasurements.mediciones.length - 1];
 
-        return this._parseMeasurementValues(latestMeasurement.valores);
-    }
+		return this._parseMeasurementValues(latestMeasurement.valores);
+	}
 
-    /**
-     * Fetches leaderboard data filtered by level ID.
-     * @param {number} id_nivel - The level ID to filter by.
-     * @returns {Promise<any[]>}
-     */
-    async getLeaderboardData(id_nivel) {
-        const remoteData = await this._apiClient.get('clasificacion', { 'id_nivel': id_nivel });
-        if (!remoteData || !Array.isArray(remoteData.clasificacion)) {
-            return [];
-        }
-        // Assuming the data is already in the correct format
-        return remoteData.clasificacion;
-    }
+	/**
+	 * Fetches leaderboard data filtered by level ID.
+	 * @param {number} id_nivel - The level ID to filter by.
+	 * @returns {Promise<any[]>}
+	 */
+	async getLeaderboardData(id_nivel) {
+		const remoteData = await this._apiClient.get('clasificacion', { id_nivel: id_nivel });
+		if (!remoteData || !Array.isArray(remoteData.clasificacion)) {
+			return [];
+		}
+		// Assuming the data is already in the correct format
+		return remoteData.clasificacion;
+	}
 
-    /**
-     * Safely parses the JSON string for level objectives.
-     * @param {string} jsonString
-     * @returns {Objective[]}
-     * @private
-     */
-    _parseLevelObjectives(jsonString) {
-        if (!jsonString || typeof jsonString !== 'string') {
-            return [];
-        }
-        try {
-            const objectives = JSON.parse(jsonString);
-            return Array.isArray(objectives) ? objectives : [];
-        } catch (e) {
-            console.error("Failed to parse level objectives JSON:", e);
-            return [];
-        }
-    }
+	/**
+	 * Safely parses the JSON string for level objectives.
+	 * @param {string} jsonString
+	 * @returns {Objective[]}
+	 * @private
+	 */
+	_parseLevelObjectives(jsonString) {
+		if (!jsonString || typeof jsonString !== 'string') {
+			return [];
+		}
+		try {
+			const objectives = JSON.parse(jsonString);
+			return Array.isArray(objectives) ? objectives : [];
+		} catch (e) {
+			console.error('Failed to parse level objectives JSON:', e);
+			return [];
+		}
+	}
 
-    /**
-     * Safely parses the JSON string for measurement values.
-     * @param {string} jsonString
-     * @returns {MeasurementValues|null}
-     * @private
-     */
-    _parseMeasurementValues(jsonString) {
-        if (!jsonString || typeof jsonString !== 'string') {
-            return null;
-        }
-        try {
-            // It is expected that the JSON is a valid MeasurementValues object.
-            return JSON.parse(jsonString);
-        } catch (e) {
-            console.error("Failed to parse measurement values JSON:", e);
-            return null;
-        }
-    }
+	/**
+	 * Safely parses the JSON string for measurement values.
+	 * @param {string} jsonString
+	 * @returns {MeasurementValues|null}
+	 * @private
+	 */
+	_parseMeasurementValues(jsonString) {
+		if (!jsonString || typeof jsonString !== 'string') {
+			return null;
+		}
+		try {
+			// It is expected that the JSON is a valid MeasurementValues object.
+			return JSON.parse(jsonString);
+		} catch (e) {
+			console.error('Failed to parse measurement values JSON:', e);
+			return null;
+		}
+	}
 }

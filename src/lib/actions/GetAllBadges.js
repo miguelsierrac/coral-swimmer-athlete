@@ -1,27 +1,26 @@
-
 export class GetAllBadges {
-    _apiClient
+	_apiClient;
 
-    constructor(apiClient) {
-        this._apiClient = apiClient
-    }
+	constructor(apiClient) {
+		this._apiClient = apiClient;
+	}
 
-    async handle() {
-        let remote = await this._apiClient.get(`insignias`, {})
+	async handle() {
+		let remote = await this._apiClient.get(`insignias`, {});
 
-        if (remote.insignias.length === 0) {
-            return []
-        }
+		if (remote.insignias.length === 0) {
+			return [];
+		}
 
-        return remote.insignias.map(this.map)
-    }
+		return remote.insignias.map(this.map);
+	}
 
-    map(remote) {
-        return {
-            "id": remote.id,
-            "name": remote.nombre,
-            "icon": remote.icono,
-            "description": remote.descripcion
-        }
-    }
+	map(remote) {
+		return {
+			id: remote.id,
+			name: remote.nombre,
+			icon: remote.icono,
+			description: remote.descripcion
+		};
+	}
 }

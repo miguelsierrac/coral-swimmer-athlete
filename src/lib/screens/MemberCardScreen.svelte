@@ -1,5 +1,4 @@
 <script>
-	import { onMount } from 'svelte';
 	import { toast } from '@zerodevx/svelte-toast';
 	import TechnicalSheet from '$lib/screens/TechnicalSheet.svelte';
 
@@ -9,7 +8,6 @@
 	export let level = null;
 	export let stats = {};
 	export let isLoading = false;
-	export let leaderboardUsers = [];
 	export let gamificationLevels = [];
 	export let currentUserID;
 
@@ -105,7 +103,17 @@
 				<div class="card-face card-front">
 					{#if athlete.tier !== 'standard'}
 						<button class="flip-btn" on:click={() => (isFlipped = !isFlipped)}>
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
 								<path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
 							</svg>
 						</button>
@@ -185,7 +193,9 @@
 										></path>
 									</svg>
 								</div>
-								<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left">
+								<p
+									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
+								>
 									{athlete.forename}
 									{athlete.surname}
 								</p>
@@ -256,7 +266,9 @@
 										></path>
 									</svg>
 								</div>
-								<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left">
+								<p
+									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
+								>
 									Miembro desde {convertDateToUTC(new Date(athlete.start_date)).toLocaleDateString(
 										'es-ES',
 										{ month: 'long', year: 'numeric' }
@@ -282,7 +294,9 @@
 										></path>
 									</svg>
 								</div>
-								<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left">
+								<p
+									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
+								>
 									{#if athlete.remaining_days >= 0}
 										Clases restantes: <b>{athlete.remaining_days}</b>
 									{:else}
@@ -314,7 +328,9 @@
 											></path>
 										</svg>
 									</div>
-									<p class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left">
+									<p
+										class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
+									>
 										Telefóno: {athlete.phone}
 									</p>
 								</div>
@@ -359,7 +375,6 @@
 						{badges}
 						{level}
 						{isLoading}
-						{leaderboardUsers}
 						allLevels={gamificationLevels}
 						{currentUserID}
 						on:flip={() => (isFlipped = !isFlipped)}
@@ -424,7 +439,10 @@
 			0 24px 48px rgba(0, 0, 0, 0.08),
 			inset 0 1px 0 rgba(255, 255, 255, 0.6);
 		overflow: hidden;
-		-webkit-mask-image: -webkit-radial-gradient(white, black); /* Fix Safari border-radius overflow */
+		-webkit-mask-image: -webkit-radial-gradient(
+			white,
+			black
+		); /* Fix Safari border-radius overflow */
 		transform: translateZ(3px);
 		z-index: 1;
 		border: 1px solid rgba(0, 0, 0, 0.08);
@@ -460,7 +478,9 @@
 		z-index: 20;
 		color: var(--primary-blue);
 		box-shadow: 0 4px 12px rgba(66, 133, 244, 0.25);
-		transition: transform 0.2s, opacity 0s 0.4s;
+		transition:
+			transform 0.2s,
+			opacity 0s 0.4s;
 		opacity: 1;
 		-webkit-backface-visibility: hidden;
 		backface-visibility: hidden;
@@ -482,7 +502,9 @@
 	.card-inner.is-flipped .card-front .flip-btn {
 		opacity: 0;
 		pointer-events: none;
-		transition: opacity 0s 0s, transform 0.2s;
+		transition:
+			opacity 0s 0s,
+			transform 0.2s;
 	}
 
 	.stamp {
@@ -508,6 +530,4 @@
 		-webkit-mask-position: 2rem 3rem;
 		font-size: 4rem;
 	}
-
-
 </style>

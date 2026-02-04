@@ -1,6 +1,5 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import Badge from '$lib/components/Badge.svelte';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
 
@@ -17,7 +16,6 @@
 	export let badges = [];
 	export let level = null;
 	export let isLoading = false;
-	export let leaderboardUsers = [];
 	export let allLevels = [];
 	export let currentUserID;
 
@@ -26,7 +24,6 @@
 	// Reactividad para facilitar la lectura en el HTML
 	$: isKids = tier === 'kids';
 	$: isPerformance = tier === 'performance';
-	$: lastBadge = badges && badges.length > 0 ? badges[badges.length - 1] : null;
 
 	// Update stats with level and badges
 	$: {
@@ -71,8 +68,16 @@
 </script>
 
 {#if showSkillsPopup && level && level.skills}
-	<div class="popup-overlay" on:click={() => (showSkillsPopup = false)}>
-		<div class="popup-content" on:click|stopPropagation>
+	<div
+		class="popup-overlay"
+		role="button"
+		tabindex="0"
+		on:click={() => (showSkillsPopup = false)}
+		on:keydown={(e) => {
+			if (e.key === 'Enter') showSkillsPopup = false;
+		}}
+	>
+		<div class="popup-content">
 			<button class="popup-close" on:click={() => (showSkillsPopup = false)}>&times;</button>
 			<h3>Habilidades de Nivel: {level.name}</h3>
 			<p>Progreso: {stats.levelProgress}% completado</p>
@@ -92,8 +97,16 @@
 {/if}
 
 {#if showObjectivesPopup}
-	<div class="popup-overlay" on:click={toggleObjectivesPopup}>
-		<div class="popup-content objectives-popup" on:click|stopPropagation>
+	<div
+		class="popup-overlay"
+		role="button"
+		tabindex="0"
+		on:click={toggleObjectivesPopup}
+		on:keydown={(e) => {
+			if (e.key === 'Enter') toggleObjectivesPopup();
+		}}
+	>
+		<div class="popup-content objectives-popup">
 			<button class="popup-close" on:click={toggleObjectivesPopup}>&times;</button>
 			<h3>🎯 Objetivos del Nivel {level?.nombre || ''}</h3>
 			<p class="popup-subtitle">Progreso: {stats.levelProgress || 0}% completado</p>
@@ -106,9 +119,17 @@
 							: 'badge-slot-locked'}
 						<div
 							class="badge-slot {gradeClass}"
+							role="button"
+							tabindex="0"
 							on:click={(e) => {
 								e.stopPropagation();
 								handleBadgeClick(e, badge);
+							}}
+							on:keydown={(e) => {
+								if (e.key === 'Enter') {
+									e.stopPropagation();
+									handleBadgeClick(e, badge);
+								}
 							}}
 						>
 							{#if badge.progress}
@@ -183,7 +204,12 @@
 				<div class="level-card-container">
 					<div
 						class="level-card-header"
+						role="button"
+						tabindex="0"
 						on:click={toggleObjectivesPopup}
+						on:keydown={(e) => {
+							if (e.key === 'Enter') toggleObjectivesPopup();
+						}}
 						style="background: {stats.levelColor};"
 					>
 						<div class="level-ring-container">
@@ -252,7 +278,12 @@
 					<div class="level-card-container">
 						<div
 							class="level-card-header-compact"
+							role="button"
+							tabindex="0"
 							on:click={toggleObjectivesPopup}
+							on:keydown={(e) => {
+								if (e.key === 'Enter') toggleObjectivesPopup();
+							}}
 							style="background: {stats.levelColor};"
 						>
 							<div class="level-header-content">
@@ -281,7 +312,15 @@
 		{/if}
 
 		{#if selectedBadge}
-			<div class="popover-backdrop" on:click={closePopover}></div>
+			<div
+				class="popover-backdrop"
+				role="button"
+				tabindex="0"
+				on:click={closePopover}
+				on:keydown={(e) => {
+					if (e.key === 'Enter') closePopover();
+				}}
+			></div>
 			<div
 				class="popover-container"
 				style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
@@ -303,7 +342,15 @@
 						</div>
 					</div>
 				{:else}
-					<div class="leaderboard-cta" on:click={toggleLeaderboard}>
+					<div
+						class="leaderboard-cta"
+						role="button"
+						tabindex="0"
+						on:click={toggleLeaderboard}
+						on:keydown={(e) => {
+							if (e.key === 'Enter') toggleLeaderboard();
+						}}
+					>
 						<div class="cta-icon">🏆</div>
 						<div class="cta-text">
 							<h4>Tabla de Posiciones</h4>
@@ -315,11 +362,18 @@
 			</div>
 
 			{#if showLeaderboard}
-				<div class="leaderboard-modal-overlay" on:click={toggleLeaderboard}>
+				<div
+					class="leaderboard-modal-overlay"
+					role="button"
+					tabindex="0"
+					on:click={toggleLeaderboard}
+					on:keydown={(e) => {
+						if (e.key === 'Enter') toggleLeaderboard();
+					}}
+				>
 					<div class="leaderboard-modal-content" on:click|stopPropagation>
 						<button class="popup-close" on:click={toggleLeaderboard}>&times;</button>
 						<Leaderboard
-							users={leaderboardUsers}
 							{allLevels}
 							{currentUserID}
 							currentUserLevelId={level ? level.id : null}

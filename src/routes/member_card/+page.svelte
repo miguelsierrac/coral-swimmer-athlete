@@ -20,7 +20,6 @@
 	// New gamification data holders
 	let gamificationLevels = [];
 	let userGamificationProgress = null;
-	let leaderboardUsers = [];
 
 	const onLogOut = () => {
 		$athlete = null;
@@ -30,18 +29,15 @@
 	onMount(async () => {
 		try {
 			if ($athlete) {
-				const [fetchedAthlete, information, allLevels, measurements] =
-					await Promise.all([
-						provider.getAthlete.handle($athlete.identification),
-						provider.getInformation.handle($athlete.id).catch((error) => {
-							console.error('Error fetching information:', error);
-							return null; // Gracefully handle if info fails
-						}),
-						provider.getGamificationData.getLevels(
-							$athlete.tier === 'kids' ? 'kids' : 'adults'
-						),
-						provider.getGamificationData.getMeasurements($athlete.id)
-					]);
+				const [fetchedAthlete, information, allLevels, measurements] = await Promise.all([
+					provider.getAthlete.handle($athlete.identification),
+					provider.getInformation.handle($athlete.id).catch((error) => {
+						console.error('Error fetching information:', error);
+						return null; // Gracefully handle if info fails
+					}),
+					provider.getGamificationData.getLevels($athlete.tier === 'kids' ? 'kids' : 'adults'),
+					provider.getGamificationData.getMeasurements($athlete.id)
+				]);
 
 				// 1. Update core athlete data
 				$athlete = fetchedAthlete;
@@ -63,14 +59,8 @@
 				if (userGamificationProgress) {
 					// Find the athlete's current level object
 					level =
-						gamificationLevels.find(
-							(l) => l.id === userGamificationProgress.nivel_actual_id
-						) || null;
-					
-					if (level) {
-						leaderboardUsers = await provider.getGamificationData.getLeaderboardData(level.id);
-
-					}
+						gamificationLevels.find((l) => l.id === userGamificationProgress.nivel_actual_id) ||
+						null;
 
 					// Derive `badges` from the objectives of the current level
 					if (level) {
@@ -99,9 +89,7 @@
 							levelIcon: level?.icono,
 							levelColor: level?.color,
 							levelProgress:
-								totalObjectives > 0
-									? Math.round((completedObjectives / totalObjectives) * 100)
-									: 0
+								totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0
 						};
 					} else if (['health', 'performance'].includes($athlete.tier)) {
 						const totalObjectives = level ? level.objetivos.length : 0;
@@ -121,9 +109,7 @@
 							levelIcon: level?.icono,
 							levelColor: level?.color,
 							levelProgress:
-								totalObjectives > 0
-									? Math.round((completedObjectives / totalObjectives) * 100)
-									: 0
+								totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0
 						};
 					}
 				}
@@ -135,8 +121,8 @@
 
 					// 1. Check for level up
 					if (currentLevelId && previousLevelId && currentLevelId !== previousLevelId) {
-						const newLevel = gamificationLevels.find(l => l.id === currentLevelId);
-						const oldLevel = gamificationLevels.find(l => l.id === previousLevelId);
+						const newLevel = gamificationLevels.find((l) => l.id === currentLevelId);
+						const oldLevel = gamificationLevels.find((l) => l.id === previousLevelId);
 						// Assuming higher ID means higher level
 						if (newLevel && oldLevel && newLevel.id > oldLevel.id) {
 							newAchievements.push({
@@ -150,20 +136,21 @@
 					// 2. Check for new/upgraded badges
 					const previousProgress = $lastMeasurement.progreso_objetivos || {};
 					const currentProgress = userGamificationProgress.progreso_objetivos || {};
-					const gradeValues = { 'bronce': 1, 'plata': 2, 'oro': 3 };
+					const gradeValues = { bronce: 1, plata: 2, oro: 3 };
 
-					const allObjectives = gamificationLevels.flatMap(l => l.objetivos);
+					const allObjectives = gamificationLevels.flatMap((l) => l.objetivos);
 
 					for (const objectiveId in currentProgress) {
 						const previousGrade = previousProgress[objectiveId];
 						const currentGrade = currentProgress[objectiveId];
 
-						if (currentGrade) { // Only consider if there is a grade
+						if (currentGrade) {
+							// Only consider if there is a grade
 							const previousValue = previousGrade ? gradeValues[previousGrade] : 0;
 							const currentValue = gradeValues[currentGrade];
 
 							if (currentValue > previousValue) {
-								const objective = allObjectives.find(o => o.id === objectiveId);
+								const objective = allObjectives.find((o) => o.id === objectiveId);
 								if (objective) {
 									newAchievements.push({
 										type: 'badge',
@@ -174,7 +161,7 @@
 							}
 						}
 					}
-					
+
 					// 3. Trigger popup
 					if (newAchievements.length > 0) {
 						popup.set({
@@ -214,13 +201,12 @@
 </script>
 
 <MemberCardScreen
-    bind:athlete={$athlete}
-    {onLogOut}
-    {badges}
-    {level}
-    {stats}
-    {isLoading}
-    {leaderboardUsers}
-    {gamificationLevels}
-    currentUserID={$athlete?.id}
+	bind:athlete={$athlete}
+	{onLogOut}
+	{badges}
+	{level}
+	{stats}
+	{isLoading}
+	{gamificationLevels}
+	currentUserID={$athlete?.id}
 />
