@@ -1,6 +1,7 @@
 <script>
 	import { toast } from '@zerodevx/svelte-toast';
 	import TechnicalSheet from '$lib/screens/TechnicalSheet.svelte';
+	import ProductTour from '$lib/components/ProductTour.svelte';
 
 	export let athlete;
 	export let onLogOut;
@@ -12,6 +13,70 @@
 	export let currentUserID;
 
 	let isFlipped = false;
+	let tourInstance;
+
+	// Configure tour steps based on athlete tier
+	let tourSteps = [];
+	$: if (athlete && athlete.tier !== 'standard') {
+		tourSteps = [
+			{
+				element: '.flip-btn',
+				popover: {
+					title: '🔄 Voltea tu Carnet',
+					description:
+						'¡Bienvenido! Haz click en este botón para voltear tu carnet y acceder a tu <strong>Ficha Técnica</strong> con toda tu información de progreso.',
+					side: 'bottom',
+					align: 'center',
+					onNextClick: () => {
+						isFlipped = true;
+						setTimeout(() => {
+							const driver = tourInstance?.getInstance();
+							if (driver) driver.moveNext();
+						}, 600);
+					}
+				}
+			},
+			{
+				element: '#tech-sheet-header',
+				popover: {
+					title: '📊 Tu Ficha Técnica',
+					description:
+						'Aquí encontrarás toda tu información de progreso y desarrollo. Vamos a explorar las secciones principales.',
+					side: 'bottom',
+					align: 'start'
+				}
+			},
+			{
+				element: '#basic-stats-section',
+				popover: {
+					title: '⚖️ Estadísticas Básicas',
+					description: 'Tus medidas básicas de peso y talla, actualizadas regularmente.',
+					side: 'bottom',
+					align: 'center'
+				}
+			},
+			{
+				element: '#level-section',
+				popover: {
+					title: '🎯 Tu Nivel y Objetivos',
+					description:
+						'Aquí ves tu nivel actual y progreso. <strong>Haz click</strong> para ver todos tus objetivos en detalle.',
+					side: 'bottom',
+					align: 'center'
+				}
+			},
+			{
+				element: '#leaderboard-section',
+				popover: {
+					title: '🏆 Tabla de Posiciones',
+					description:
+						'Accede al ranking para ver cómo te comparas con otros atletas de tu nivel. ¡Compite y mejora tu posición!',
+					side: 'top',
+					align: 'center'
+				}
+			}
+		];
+	}
 
 	function convertDateToUTC(date) {
 		return new Date(
@@ -89,6 +154,39 @@
 </svelte:head>
 
 {#if athlete}
+	<ProductTour
+		steps={tourSteps}
+		storageKey="hasSeenMemberCardTour"
+		bind:this={tourInstance}
+	/>
+
+	<!-- Help button to restart tour -->
+	{#if athlete.tier !== 'standard' && !isFlipped}
+		<button
+			class="help-tour-btn"
+			on:click={() => {
+				if (tourInstance) tourInstance.restart();
+			}}
+			title="Ver tutorial"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<circle cx="12" cy="12" r="10"></circle>
+				<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+				<line x1="12" y1="17" x2="12.01" y2="17"></line>
+			</svg>
+		</button>
+	{/if}
+
 	<div class="page-wrapper">
 		<div class="card-scene">
 			<div class="card-inner" class:is-flipped={isFlipped}>
@@ -485,6 +583,35 @@
 		-webkit-backface-visibility: hidden;
 		backface-visibility: hidden;
 		animation: pulse-attention 2s infinite;
+	}
+
+	.help-tour-btn {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		background: #4285f4;
+		border: none;
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 999;
+		color: white;
+		box-shadow: 0 4px 16px rgba(66, 133, 244, 0.4);
+		transition: all 0.3s ease;
+	}
+
+	.help-tour-btn:hover {
+		background: #3c78d8;
+		transform: translateY(-2px) scale(1.05);
+		box-shadow: 0 6px 20px rgba(66, 133, 244, 0.5);
+	}
+
+	.help-tour-btn:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	@keyframes pulse-attention {

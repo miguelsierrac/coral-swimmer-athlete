@@ -65,6 +65,10 @@
 	function toggleObjectivesPopup() {
 		showObjectivesPopup = !showObjectivesPopup;
 	}
+
+	function handleModalContentClick(event) {
+		event.stopPropagation();
+	}
 </script>
 
 {#if showSkillsPopup && level && level.skills}
@@ -167,7 +171,7 @@
 
 	<div class="content-scroll">
 		<!-- Header -->
-		<div class="stats-header">
+		<div class="stats-header" id="tech-sheet-header">
 			<h3>
 				Ficha del Atleta {#if isPerformance}<span class="pro-badge">PRO</span>{/if}
 			</h3>
@@ -183,7 +187,7 @@
 		</div>
 
 		<!-- 1. Basic Stats (Común para todos) -->
-		<div class="basic-stats-grid">
+		<div class="basic-stats-grid" id="basic-stats-section">
 			<div class="stat-box">
 				<small>Peso</small>
 				<strong>{stats.weight ?? '-'} <span class="unit">kg</span></strong>
@@ -201,7 +205,7 @@
 		{:else if isKids}
 			<!-- VISTA NIÑOS -->
 			<div class="kids-data-wrapper">
-				<div class="level-card-container">
+				<div class="level-card-container" id="level-section">
 					<div
 						class="level-card-header"
 						role="button"
@@ -275,7 +279,7 @@
 				</div>
 
 				{#if !isLoading && stats.levelName}
-					<div class="level-card-container">
+					<div class="level-card-container" id="level-section">
 						<div
 							class="level-card-header-compact"
 							role="button"
@@ -331,7 +335,7 @@
 
 		{#if !isLoading && stats.levelName}
 			<!-- SECCIÓN LEADERBOARD -->
-			<div class="leaderboard-section">
+			<div class="leaderboard-section" id="leaderboard-section">
 				{#if tier === 'standard'}
 					<div class="leaderboard-upsell">
 						<div class="lock-icon">🔒</div>
@@ -371,16 +375,25 @@
 						if (e.key === 'Enter') toggleLeaderboard();
 					}}
 				>
-					<div class="leaderboard-modal-content" on:click|stopPropagation>
-						<button class="popup-close" on:click={toggleLeaderboard}>&times;</button>
-						<Leaderboard
-							{allLevels}
-							{currentUserID}
-							currentUserLevelId={level ? level.id : null}
-							{badges}
-							userLevel={level}
-							specialty={stats.specialty}
-						/>
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<div class="leaderboard-modal-wrapper" on:click={handleModalContentClick}>
+						<section
+							class="leaderboard-modal-content"
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="leaderboard-title"
+						>
+							<button class="popup-close" on:click={toggleLeaderboard}>&times;</button>
+							<Leaderboard
+								{allLevels}
+								{currentUserID}
+								currentUserLevelId={level ? level.id : null}
+								{badges}
+								userLevel={level}
+								specialty={stats.specialty}
+							/>
+						</section>
 					</div>
 				</div>
 			{/if}
@@ -1209,6 +1222,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+	.leaderboard-modal-wrapper {
+		display: contents;
 	}
 	.leaderboard-modal-content {
 		position: relative;
