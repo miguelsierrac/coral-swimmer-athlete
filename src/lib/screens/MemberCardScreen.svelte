@@ -2,6 +2,7 @@
 	import { toast } from '@zerodevx/svelte-toast';
 	import TechnicalSheet from '$lib/screens/TechnicalSheet.svelte';
 	import ProductTour from '$lib/components/ProductTour.svelte';
+	import { tick } from 'svelte';
 
 	export let athlete;
 	export let onLogOut;
@@ -14,6 +15,8 @@
 
 	let isFlipped = false;
 	let tourInstance;
+	let isTransitioning = false;
+	let tourInitialized = false;
 
 	// Configure tour steps based on athlete tier
 	let tourSteps = [];
@@ -27,11 +30,15 @@
 						'¡Bienvenido! Haz click en este botón para voltear tu carnet y acceder a tu <strong>Ficha Técnica</strong> con toda tu información de progreso.',
 					side: 'bottom',
 					align: 'center',
-					onNextClick: () => {
+					onNextClick: async () => {
+						if (isTransitioning) return;
+						isTransitioning = true;
 						isFlipped = true;
+						await tick();
 						setTimeout(() => {
 							const driver = tourInstance?.getInstance();
 							if (driver) driver.moveNext();
+							isTransitioning = false;
 						}, 600);
 					}
 				}
@@ -43,7 +50,18 @@
 					description:
 						'Aquí encontrarás toda tu información de progreso y desarrollo. Vamos a explorar las secciones principales.',
 					side: 'bottom',
-					align: 'start'
+					align: 'start',
+					onPrevClick: async () => {
+						if (isTransitioning) return;
+						isTransitioning = true;
+						isFlipped = false;
+						await tick();
+						setTimeout(() => {
+							const driver = tourInstance?.getInstance();
+							if (driver) driver.movePrevious();
+							isTransitioning = false;
+						}, 600);
+					}
 				}
 			},
 			{
@@ -76,6 +94,15 @@
 				}
 			}
 		];
+	}
+
+	// Ensure card is not flipped when tour starts
+	$: if (!isLoading && tourSteps.length > 0 && !tourInitialized) {
+		const hasSeenTour = typeof localStorage !== 'undefined' && localStorage.getItem('hasSeenMemberCardTour');
+		if (!hasSeenTour) {
+			isFlipped = false;
+			tourInitialized = true;
+		}
 	}
 
 	function convertDateToUTC(date) {
@@ -157,6 +184,7 @@
 	<ProductTour
 		steps={tourSteps}
 		storageKey="hasSeenMemberCardTour"
+		shouldStart={!isLoading}
 		bind:this={tourInstance}
 	/>
 

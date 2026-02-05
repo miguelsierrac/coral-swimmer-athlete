@@ -6,20 +6,30 @@
 	export let steps = [];
 	export let onComplete = () => {};
 	export let storageKey = 'hasSeenTour';
+	export let shouldStart = true;
 
 	let driverInstance;
+	let hasCheckedStorage = false;
 
 	onMount(() => {
 		// Check if user has already seen the tour
 		const hasSeenTour = localStorage.getItem(storageKey);
+		hasCheckedStorage = true;
 
-		if (!hasSeenTour && steps.length > 0) {
+		if (!hasSeenTour && steps.length > 0 && shouldStart) {
 			// Small delay to ensure DOM is ready
 			setTimeout(() => {
 				startTour();
 			}, 500);
 		}
 	});
+
+	// Watch for shouldStart changes to trigger tour when data is ready
+	$: if (hasCheckedStorage && shouldStart && !localStorage.getItem(storageKey) && steps.length > 0 && !driverInstance) {
+		setTimeout(() => {
+			startTour();
+		}, 500);
+	}
 
 	function startTour() {
 		driverInstance = driver({
@@ -40,6 +50,18 @@
 					currentStep.popover.onNextClick(driverInstance);
 				} else {
 					driverInstance.moveNext();
+				}
+			},
+			onPrevClick: (element, step, options) => {
+				// Get the current step index
+				const currentIndex = driverInstance.getActiveIndex();
+				const currentStep = steps[currentIndex];
+				
+				// Check if the current step has a custom onPrevClick
+				if (currentStep?.popover?.onPrevClick) {
+					currentStep.popover.onPrevClick(driverInstance);
+				} else {
+					driverInstance.movePrevious();
 				}
 			},
 			popoverClass: 'product-tour-popover',
