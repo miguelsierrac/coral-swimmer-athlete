@@ -2,6 +2,11 @@
 	import { popup } from '$lib/stores';
 	import confetti from 'canvas-confetti';
 	import { tick } from 'svelte';
+	import {
+		shareAchievement,
+		generateAchievementImage,
+		generateAchievementText
+	} from '$lib/infrastructure/SocialShare';
 
 	let show = false;
 	let title = '';
@@ -15,7 +20,7 @@
 			show = true;
 			title = value.title;
 			message = value.message;
-			achievements = value.achievements;
+			achievements = value.achievements || [];
 			levelAchievements = achievements.filter((a) => a.type === 'level');
 			badgeAchievements = achievements.filter((a) => a.type === 'badge');
 		} else {
@@ -44,6 +49,33 @@
 	function dismiss() {
 		popup.set(null);
 	}
+
+	async function handleShare() {
+		const levelInfo = levelAchievements[0];
+		const badges = badgeAchievements.map((a) => ({ icon: a.icon, name: a.name, grade: a.grade }));
+
+		// Generate achievement text
+		const shareText = generateAchievementText({
+			levelName: levelInfo?.name,
+			levelIcon: levelInfo?.icon,
+			badges: badges.length > 0 ? badges : null
+		});
+
+		// Generate achievement image
+		const imageBlob = await generateAchievementImage({
+			levelName: levelInfo?.name,
+			levelIcon: levelInfo?.icon,
+			levelColor: levelInfo?.color,
+			badges: badges.length > 0 ? badges : null
+		});
+
+		// Share with image
+		await shareAchievement({
+			title: title,
+			text: shareText,
+			image: imageBlob
+		});
+	}
 </script>
 
 {#if show}
@@ -70,20 +102,33 @@
 					<h3 class="text-lg font-semibold text-gray-700 mb-3">Nuevas Insignias</h3>
 					<div class="grid grid-cols-3 gap-4">
 						{#each badgeAchievements as achievement}
-							<div class="flex flex-col items-center p-2 bg-gray-100 rounded-lg">
-								<span class="text-3xl">{achievement.icon}</span>
-								<span class="text-xs text-center mt-1">{achievement.name}</span>
-							</div>
-						{/each}
-					</div>
+						<div class="flex flex-col items-center p-2 bg-gray-100 rounded-lg relative">
+							<span class="text-3xl">{achievement.icon}</span>
+							<span class="text-xs text-center mt-1">{achievement.name}</span>
+							{#if achievement.grade}
+								<span class="text-lg mt-1">
+									{achievement.grade === 'oro' ? '🥇' : achievement.grade === 'plata' ? '🥈' : '🥉'}
+								</span>
+							{/if}
+						</div>
+					{/each}
 				</div>
-			{/if}
+			</div>
+		{/if}
 
-			<button
-				on:click={dismiss}
-				class="mt-8 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full"
+		<button
+			on:click={dismiss}
+			class="mt-8 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full"
+		>
+			Cerrar
+		</button>
+
+		<button
+				on:click={handleShare}
+				class="mt-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-3 rounded text-sm flex items-center justify-center gap-2 border border-gray-300"
 			>
-				Cerrar
+				<span class="text-sm">📤</span>
+				<span>Compartir</span>
 			</button>
 		</div>
 	</div>

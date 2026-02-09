@@ -154,8 +154,9 @@
 								if (objective) {
 									newAchievements.push({
 										type: 'badge',
-										name: `${objective.nombre} (${currentGrade})`,
-										icon: objective.icono
+									name: objective.nombre,
+									icon: objective.icono,
+									grade: currentGrade
 									});
 								}
 							}

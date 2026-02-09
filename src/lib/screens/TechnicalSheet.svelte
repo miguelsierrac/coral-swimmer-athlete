@@ -37,6 +37,7 @@
 
 	let showSkillsPopup = false;
 	let showObjectivesPopup = false;
+	let showVisceralFatPopup = false;
 	let selectedBadge = null;
 	let popoverPosition = { top: 0, left: 0 };
 	let showLeaderboard = false;
@@ -64,6 +65,10 @@
 
 	function toggleObjectivesPopup() {
 		showObjectivesPopup = !showObjectivesPopup;
+	}
+
+	function toggleVisceralFatPopup() {
+		showVisceralFatPopup = !showVisceralFatPopup;
 	}
 
 	function handleModalContentClick(event) {
@@ -95,6 +100,47 @@
 						<span class="skill-status">{isCompleted ? '✅ Completada' : '⏳ Pendiente'}</span>
 					</div>
 				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showVisceralFatPopup}
+	<div
+		class="popup-overlay"
+		role="button"
+		tabindex="0"
+		on:click={toggleVisceralFatPopup}
+		on:keydown={(e) => {
+			if (e.key === 'Enter') toggleVisceralFatPopup();
+		}}
+	>
+		<div class="popup-content visceral-fat-popup">
+			<button class="popup-close" on:click={toggleVisceralFatPopup}>&times;</button>
+			<h3>📊 Grasa Visceral</h3>
+			<p class="popup-subtitle">Guía de clasificación y riesgo para la salud</p>
+
+			<div class="visceral-table">
+				<div class="table-row header-row">
+					<div class="table-cell">Nivel</div>
+					<div class="table-cell">Clasificación</div>
+					<div class="table-cell">Riesgo para la Salud</div>
+				</div>
+				<div class="table-row healthy-row">
+					<div class="table-cell">1 - 9</div>
+					<div class="table-cell">Saludable / Normal</div>
+					<div class="table-cell">Bajo riesgo. Se considera el rango óptimo.</div>
+				</div>
+				<div class="table-row moderate-row">
+					<div class="table-cell">10 - 14</div>
+					<div class="table-cell">Alto / Exceso</div>
+					<div class="table-cell">Riesgo moderado. Se recomienda cambios en dieta y ejercicio.</div>
+				</div>
+				<div class="table-row high-row">
+					<div class="table-cell">15 - 30</div>
+					<div class="table-cell">Muy Alto / Obesidad Visceral</div>
+					<div class="table-cell">Riesgo elevado de enfermedades metabólicas.</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -270,8 +316,16 @@
 						<small>Cadera</small>
 						<strong>{stats.hip ?? '-'} <span class="measure-unit">cm</span></strong>
 					</div>
-					<div class="measure-box">
-						<small>Grasa Visc.</small>
+					<div 
+						class="measure-box clickable"
+						role="button"
+						tabindex="0"
+						on:click={toggleVisceralFatPopup}
+						on:keydown={(e) => {
+							if (e.key === 'Enter') toggleVisceralFatPopup();
+						}}
+					>
+						<small>Grasa Visc. ℹ️</small>
 						<strong style="color: #E67C73;"
 							>{stats.visceralFat ?? '-'} <span class="measure-unit">%</span></strong
 						>
@@ -755,6 +809,15 @@
 		border-radius: 12px;
 		padding: 6px 4px;
 		text-align: center;
+		transition: all 0.2s ease;
+	}
+	.measure-box.clickable {
+		cursor: pointer;
+	}
+	.measure-box.clickable:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		border-color: #4285f4;
 	}
 	.measure-box small {
 		display: block;
@@ -1083,6 +1146,54 @@
 		color: #9c7849;
 		font-size: 12px;
 		font-weight: 600;
+	}
+
+	/* Visceral Fat Table Styles */
+	.visceral-table {
+		margin-top: 15px;
+		border-radius: 12px;
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	}
+	.table-row {
+		display: grid;
+		grid-template-columns: 0.8fr 1.2fr 2fr;
+		gap: 8px;
+		padding: 10px 12px;
+		border-bottom: 1px solid #e0e0e0;
+	}
+	.table-row:last-child {
+		border-bottom: none;
+	}
+	.header-row {
+		background: #4285f4;
+		color: white;
+		font-weight: 700;
+		font-size: 11px;
+		text-transform: uppercase;
+	}
+	.healthy-row {
+		background: #e8f5e9;
+		border-left: 4px solid #34a853;
+	}
+	.moderate-row {
+		background: #fff8e1;
+		border-left: 4px solid #fbbc04;
+	}
+	.high-row {
+		background: #ffebee;
+		border-left: 4px solid #ea4335;
+	}
+	.table-cell {
+		font-size: 11px;
+		color: #1c150d;
+		line-height: 1.4;
+		display: flex;
+		align-items: center;
+	}
+	.header-row .table-cell {
+		color: white;
+		font-size: 10px;
 	}
 
 	/* Skills Popup Styles */

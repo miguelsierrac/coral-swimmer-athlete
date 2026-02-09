@@ -1,6 +1,11 @@
 <script>
 	import { onMount, getContext } from 'svelte';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
+	import {
+		shareAchievement,
+		generateAchievementText,
+		generateAchievementImage
+	} from '$lib/infrastructure/SocialShare';
 
 	export let allLevels = [];
 	export let currentUserID;
@@ -96,6 +101,62 @@
 	function closePopover() {
 		selectedBadge = null;
 	}
+
+	async function handleShareRanking() {
+		const currentUser = rankedUsers.find((u) => u.id_deportista == currentUserID);
+		const rank = currentUser?.rank || 0;
+		const points = currentUser?.puntaje_total || 0;
+
+		const shareText = generateAchievementText({
+			levelName: currentLevel?.nombre,
+			levelIcon: currentLevel?.icono,
+			totalPoints: points,
+			rank: rank
+		});
+
+		// Generate image with ranking
+		const imageBlob = await generateAchievementImage({
+			levelName: currentLevel?.nombre,
+			levelIcon: currentLevel?.icono,
+			levelColor: currentLevel?.color,
+			totalPoints: points,
+			rank: rank
+		});
+
+		await shareAchievement({
+			title: '🏆 Mi Posición en el Ranking',
+			text: shareText,
+			image: imageBlob
+		});
+	}
+
+	async function handleShareAchievements() {
+		const completedBadges = badges
+			.filter((b) => b.progress)
+			.map((b) => ({ icon: b.icono, name: b.nombre, grade: b.progress }));
+
+		const shareText = generateAchievementText({
+			levelName: userLevel?.nombre,
+			levelIcon: userLevel?.icono,
+			badges: completedBadges.length > 0 ? completedBadges : null,
+			totalPoints: totalBadgePoints
+		});
+
+		// Generate image with achievements
+		const imageBlob = await generateAchievementImage({
+			levelName: userLevel?.nombre,
+			levelIcon: userLevel?.icono,
+			levelColor: userLevel?.color,
+			badges: completedBadges.length > 0 ? completedBadges : null,
+			totalPoints: totalBadgePoints
+		});
+
+		await shareAchievement({
+			title: '🎯 Mis Logros en Coral Swimmer',
+			text: shareText,
+			image: imageBlob
+		});
+	}
 </script>
 
 <div class="leaderboard-container">
@@ -136,6 +197,15 @@
 					{/if}
 				</h3>
 				<span class="total-players">{rankedUsers.length} Atletas compitiendo</span>
+				
+				<button
+					on:click={handleShareRanking}
+					class="share-btn mt-2"
+					title="Compartir mi posición"
+				>
+					<span>📤</span>
+					<span>Compartir Posición</span>
+				</button>
 			</div>
 
 			<div class="level-filter">
@@ -213,6 +283,15 @@
 
 			<div class="badges-section">
 				<h4>Mis Insignias <span class="points-total">{totalBadgePoints} Pts en Logros</span></h4>
+
+				<button
+					on:click={handleShareAchievements}
+					class="share-btn mb-4"
+					title="Compartir mis logros"
+				>
+					<span>📤</span>
+					<span>Compartir Logros</span>
+				</button>
 
 				<div class="badge-grid-compact">
 					{#if badges && badges.length > 0}
@@ -810,4 +889,31 @@
 			border-radius: 16px;
 		}
 	}
-</style>
+
+	/* Share Button Styles */
+	.share-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		background: #f8f9fa;
+		color: #6c757d;
+		border: 1px solid #dee2e6;
+		border-radius: 20px;
+		font-weight: 500;
+		font-size: 13px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.share-btn:hover {
+		background: #e9ecef;
+		color: #495057;
+		border-color: #adb5bd;
+	}
+
+	.share-btn:active {
+		transform: scale(0.98);
+	}
+
+	/* Share Modal Styles */</style>
