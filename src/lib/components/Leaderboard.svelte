@@ -71,14 +71,11 @@
 		if (user.foto_deportista) {
 			return user.foto_deportista;
 		}
-		// Generate consistent avatar based on user name
-		const seed =
-			user.nombre_deportista && user.apellido_deportista
-				? (user.nombre_deportista + user.apellido_deportista)
-						.split('')
-						.reduce((acc, char) => acc + char.charCodeAt(0), 0)
-				: Math.random() * 100;
-		return `https://i.pravatar.cc/100?img=${(seed % 70) + 1}`;
+		// Generate a consistent, gender-neutral avatar using the user's name as a seed
+		const seed = encodeURIComponent(
+			(user.nombre_deportista || '') + (user.apellido_deportista || 'default')
+		);
+		return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}`;
 	}
 
 	function switchTab(tab) {
