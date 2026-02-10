@@ -6,6 +6,7 @@
 		generateAchievementText,
 		generateAchievementImage
 	} from '$lib/infrastructure/SocialShare';
+	import { trackViewAchievements } from '$lib/infrastructure/AnalyticsService.js';
 
 	export let allLevels = [];
 	export let currentUserID;
@@ -81,6 +82,9 @@
 	}
 
 	function switchTab(tab) {
+		if (tab === 'badges') {
+			trackViewAchievements();
+		}
 		activeTab = tab;
 		closePopover(); // Close any open badge popover when switching tabs
 	}
@@ -126,7 +130,8 @@
 		await shareAchievement({
 			title: '🏆 Mi Posición en el Ranking',
 			text: shareText,
-			image: imageBlob
+			image: imageBlob,
+			source: 'Leaderboard'
 		});
 	}
 
@@ -154,7 +159,8 @@
 		await shareAchievement({
 			title: '🎯 Mis Logros en Coral Swimmer',
 			text: shareText,
-			image: imageBlob
+			image: imageBlob,
+			source: 'Achievements'
 		});
 	}
 </script>

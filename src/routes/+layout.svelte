@@ -6,29 +6,14 @@
 	import { browser } from '$app/environment';
 	import { onMount, setContext } from 'svelte';
 	import { athlete, lastSync, token, lastMeasurement } from '$lib/stores.js';
-	import { initializeApp } from 'firebase/app';
-	import { getAnalytics } from 'firebase/analytics';
-	import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+	import { getToken, onMessage } from 'firebase/messaging';
+	import { messaging } from '$lib/infrastructure/firebase.js';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
 	import PushNotificationComponent from '$lib/components/PushNotification.svelte';
 	import CelebrationPopup from '$lib/components/CelebrationPopup.svelte';
 	import { openDB } from 'idb';
 
-	const firebaseConfig = {
-		apiKey: 'AIzaSyD2JWxdRU6AhI5WMBHgvLMb6v8x9tLzqw0',
-		authDomain: 'coral-swimmer.firebaseapp.com',
-		projectId: 'coral-swimmer',
-		storageBucket: 'coral-swimmer.appspot.com',
-		messagingSenderId: '528677262049',
-		appId: '1:528677262049:web:89c2b229471e4cef505da0',
-		measurementId: 'G-Q61LGSCMEX'
-	};
 
-	console.log('Initialize Firebase...');
-	// Initialize Firebase
-	const app = initializeApp(firebaseConfig);
-	const analytics = getAnalytics(app);
-	const messaging = getMessaging(app);
 
 	const provider = Provider;
 

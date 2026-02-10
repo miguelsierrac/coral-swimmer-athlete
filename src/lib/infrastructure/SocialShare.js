@@ -392,6 +392,8 @@ export async function generateAchievementImage({
 	});
 }
 
+import { trackShare } from './AnalyticsService.js';
+
 /**
  * Share achievement with image using the Web Share API
  * @param {Object} options - Share options
@@ -400,7 +402,7 @@ export async function generateAchievementImage({
  * @param {Blob} options.image - Image blob to share
  * @returns {Promise<boolean>} - Returns true if shared successfully
  */
-export async function shareAchievement({ title, text, image }) {
+export async function shareAchievement({ title, text, image, source = 'Celebration Popup' }) {
 	const shareData = {
 		title: title || 'Mi progreso en Coral Swimmer',
 		text: text || 'Mira mis logros en natación!'
@@ -415,6 +417,7 @@ export async function shareAchievement({ title, text, image }) {
 	// Try native Web Share API first
 	if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
 		try {
+			trackShare('Web Share API', source);
 			await navigator.share(shareData);
 			return true;
 		} catch (err) {
@@ -428,6 +431,7 @@ export async function shareAchievement({ title, text, image }) {
 
 	// Fallback: download image if sharing not supported
 	if (image) {
+		trackShare('Download Fallback', source);
 		const url = URL.createObjectURL(image);
 		const a = document.createElement('a');
 		a.href = url;

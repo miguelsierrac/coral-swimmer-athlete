@@ -1,7 +1,16 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
+	import {
+		trackViewAthleteCard,
+		trackViewLeaderboard,
+		trackViewAchievements
+	} from '$lib/infrastructure/AnalyticsService.js';
+
+	onMount(() => {
+		trackViewAthleteCard();
+	});
 
 	export let tier = 'standard'; // 'standard', 'kids', 'performance'
 	export let stats = {
@@ -60,10 +69,16 @@
 	}
 
 	function toggleLeaderboard() {
+		if (!showLeaderboard) {
+			trackViewLeaderboard();
+		}
 		showLeaderboard = !showLeaderboard;
 	}
 
 	function toggleObjectivesPopup() {
+		if (!showObjectivesPopup) {
+			trackViewAchievements();
+		}
 		showObjectivesPopup = !showObjectivesPopup;
 	}
 

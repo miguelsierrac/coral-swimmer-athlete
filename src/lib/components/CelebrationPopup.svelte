@@ -7,6 +7,7 @@
 		generateAchievementImage,
 		generateAchievementText
 	} from '$lib/infrastructure/SocialShare';
+	import { trackCelebrationPopup } from '$lib/infrastructure/AnalyticsService.js';
 
 	let show = false;
 	let title = '';
@@ -30,6 +31,7 @@
 
 	$: {
 		if (show) {
+			trackCelebrationPopup(achievements);
 			tick().then(() => {
 				const canvas = document.querySelector('#confetti-canvas');
 				if (canvas) {
