@@ -171,7 +171,8 @@
 						popup.set({
 							title: '¡Felicidades!',
 							message: '¡Has alcanzado nuevos logros!',
-							achievements: newAchievements
+							achievements: newAchievements,
+							totalDistance: information?.total_distance || null
 						});
 					}
 				}

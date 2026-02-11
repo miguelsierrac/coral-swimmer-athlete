@@ -30,7 +30,7 @@
 	export let currentUserID;
 	export let monthlyRecord = null;
 	export let monthlyRecordDate = null;
-	export let totalDistance = 0;
+	export let totalDistance = null;
 
 	const dispatch = createEventDispatcher();
 
@@ -509,6 +509,7 @@
 								{badges}
 								userLevel={level}
 								specialty={stats.specialty}
+								{totalDistance}
 							/>
 						</section>
 					</div>

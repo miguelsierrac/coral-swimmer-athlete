@@ -15,6 +15,7 @@
 	let achievements = [];
 	let levelAchievements = [];
 	let badgeAchievements = [];
+	let totalDistance = null;
 
 	popup.subscribe((value) => {
 		if (value) {
@@ -24,6 +25,7 @@
 			achievements = value.achievements || [];
 			levelAchievements = achievements.filter((a) => a.type === 'level');
 			badgeAchievements = achievements.filter((a) => a.type === 'badge');
+			totalDistance = value.totalDistance || null;
 		} else {
 			show = false;
 		}
@@ -68,7 +70,8 @@
 			levelName: levelInfo?.name,
 			levelIcon: levelInfo?.icon,
 			levelColor: levelInfo?.color,
-			badges: badges.length > 0 ? badges : null
+			badges: badges.length > 0 ? badges : null,
+			totalDistance: totalDistance
 		});
 
 		// Share with image

@@ -11,6 +11,7 @@
  * @param {Array} options.badges - Array of badges {icon, name}
  * @param {number} options.totalPoints - Total points
  * @param {number} options.rank - Ranking position
+ * @param {number} options.totalDistance - Total distance swam in meters
  * @returns {Promise<Blob>} - Returns image as blob
  */
 export async function generateAchievementImage({
@@ -19,7 +20,8 @@ export async function generateAchievementImage({
 	levelColor = '#4285F4',
 	badges = [],
 	totalPoints,
-	rank
+	rank,
+	totalDistance
 }) {
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d');
@@ -208,6 +210,56 @@ export async function generateAchievementImage({
 		ctx.font = '30px Arial, sans-serif';
 		ctx.fillStyle = '#7f8c8d';
 		ctx.fillText('Puntos', centerX + 30, yPosition + cardHeight / 2 + 20);
+		
+		yPosition += cardHeight + cardGap;
+	}
+
+	// Tarjeta de Distancia Total
+	if (totalDistance !== undefined && totalDistance !== null) {
+		const cardX = canvas.width / 2 - cardWidth / 2;
+		const distanceKm = (totalDistance / 1000).toFixed(1);
+		
+		// Sombra de la tarjeta
+		ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+		ctx.shadowBlur = 20;
+		ctx.shadowOffsetY = 10;
+		
+		// Fondo de la tarjeta
+		const cardGradient = ctx.createLinearGradient(cardX, yPosition, cardX + cardWidth, yPosition);
+		cardGradient.addColorStop(0, '#f8f9fa');
+		cardGradient.addColorStop(1, '#ffffff');
+		ctx.fillStyle = cardGradient;
+		roundRect(ctx, cardX, yPosition, cardWidth, cardHeight, 20);
+		ctx.fill();
+		
+		// Borde de color
+		ctx.strokeStyle = color1;
+		ctx.lineWidth = 3;
+		ctx.stroke();
+		
+		ctx.shadowColor = 'transparent';
+		ctx.shadowBlur = 0;
+		ctx.shadowOffsetY = 0;
+		
+		// Contenido centrado
+		const centerX = cardX + cardWidth / 2;
+		
+		// Emoji de natación
+		ctx.fillStyle = '#2c3e50';
+		ctx.font = '54px Arial, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText('🏊', centerX - 110, yPosition + cardHeight / 2);
+		
+		// Texto
+		ctx.fillStyle = '#2c3e50';
+		ctx.font = 'bold 52px Arial, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(distanceKm + 'k', centerX + 30, yPosition + cardHeight / 2 - 15);
+		ctx.font = '30px Arial, sans-serif';
+		ctx.fillStyle = '#7f8c8d';
+		ctx.fillText('Metros Nadados', centerX + 30, yPosition + cardHeight / 2 + 20);
 		
 		yPosition += cardHeight + cardGap;
 	}

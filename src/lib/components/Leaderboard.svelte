@@ -14,6 +14,7 @@
 	export let badges = []; // User's badges/objectives
 	export let userLevel = null; // Current level object
 	export let specialty = null; // Optional specialty info
+	export let totalDistance = null; // Total distance swam
 
 	const provider = getContext('provider');
 	let rankedUsers = [];
@@ -121,7 +122,8 @@
 			levelIcon: currentLevel?.icono,
 			levelColor: currentLevel?.color,
 			totalPoints: points,
-			rank: rank
+			rank: rank,
+			totalDistance: totalDistance
 		});
 
 		await shareAchievement({
@@ -150,7 +152,8 @@
 			levelIcon: userLevel?.icono,
 			levelColor: userLevel?.color,
 			badges: completedBadges.length > 0 ? completedBadges : null,
-			totalPoints: totalBadgePoints
+			totalPoints: totalBadgePoints,
+			totalDistance: totalDistance
 		});
 
 		await shareAchievement({
