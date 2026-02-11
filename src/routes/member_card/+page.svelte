@@ -43,6 +43,9 @@
 				$athlete = fetchedAthlete;
 				if (information) {
 					$athlete.total_distance = information.total_distance;
+					$athlete.weeklyDistance = information.weeklyDistance;
+					$athlete.monthlyRecord = information.monthlyRecord;
+					$athlete.monthlyRecordDate = information.monthlyRecordDate;
 				}
 
 				// Token sync

@@ -497,6 +497,10 @@
 				<div class="card-face card-back">
 					<TechnicalSheet
 						tier={athlete.tier}
+						weeklyDistance={athlete.weeklyDistance}
+						monthlyRecord={athlete.monthlyRecord}
+						monthlyRecordDate={athlete.monthlyRecordDate}
+						totalDistance={athlete.total_distance}
 						{stats}
 						{badges}
 						{level}

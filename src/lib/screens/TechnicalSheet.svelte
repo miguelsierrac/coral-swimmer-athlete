@@ -26,9 +26,57 @@
 	export let level = null;
 	export let isLoading = false;
 	export let allLevels = [];
+	export let weeklyDistance = [];
 	export let currentUserID;
+	export let monthlyRecord = null;
+	export let monthlyRecordDate = null;
+	export let totalDistance = 0;
 
 	const dispatch = createEventDispatcher();
+
+	// --- Chart Logic ---
+	let chartData = [];
+	let totalWeeklyDistance = 0;
+	let weeklyRecord = 0;
+
+	$: {
+		// This reactive block processes the weeklyDistance prop into chart-ready data.
+		const processChartData = (data) => {
+			const weeklyData = Array.isArray(data) ? data : [];
+			const dayLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+			const today = new Date();
+			let days = [];
+
+			// Create a structure for the last 7 days
+			for (let i = 6; i >= 0; i--) {
+				const date = new Date();
+				date.setDate(today.getDate() - i);
+				const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon,...
+				const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${String(
+					date.getMonth() + 1
+				).padStart(2, '0')}`;
+
+				const apiDataForDay = weeklyData.find((d) => d.fecha === formattedDate);
+				days.push({
+					label: dayLabels[dayOfWeek],
+					distance: apiDataForDay ? apiDataForDay.distancia : 0,
+					active: i === 0 // Mark today's bar as active
+				});
+			}
+
+			const distances = days.map((d) => d.distance);
+			const maxDistance = Math.max(...distances, 0);
+			totalWeeklyDistance = distances.reduce((sum, d) => sum + d, 0);
+			weeklyRecord = Math.max(weeklyRecord, totalWeeklyDistance); // Keep track of historical max
+
+			// Calculate height percentage for each bar
+			return days.map((day) => ({
+				...day,
+				height: maxDistance > 0 ? (day.distance / maxDistance) * 100 : 0
+			}));
+		};
+		chartData = processChartData(weeklyDistance);
+	}
 
 	// Reactividad para facilitar la lectura en el HTML
 	$: isKids = tier === 'kids';
@@ -481,48 +529,31 @@
 			<div class="locked-section" class:blur-content={!isPerformance}>
 				<div class="chart-section">
 					<div class="chart-title">
-						<span>Volumen Semanal</span>
-						<span style="color:var(--primary-blue)">Total: 4.2k</span>
+						<span>Volumen Actividad</span>
+						<span style="color:var(--primary-blue)"
+							>Total: {(totalDistance / 1000).toFixed(1)}k</span
+						>
 					</div>
 					<div class="bar-chart">
-						<div class="bar-group">
-							<div class="bar" style="height: 30%;"></div>
-							<span class="bar-label">L</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar active" style="height: 80%;"></div>
-							<span class="bar-label">M</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar" style="height: 50%;"></div>
-							<span class="bar-label">M</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar active" style="height: 100%;"></div>
-							<span class="bar-label">J</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar" style="height: 2px%;"></div>
-							<span class="bar-label">V</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar active" style="height: 70%;"></div>
-							<span class="bar-label">S</span>
-						</div>
-						<div class="bar-group">
-							<div class="bar" style="height: 15%;"></div>
-							<span class="bar-label">D</span>
-						</div>
+						{#each chartData as day}
+							<div class="bar-group">
+								{#if day.distance > 0}
+									<span class="bar-value">{(day.distance / 1000).toFixed(1)}k</span>
+								{/if}
+								<div class="bar" class:active={day.active} style="height: {day.height}%;" />
+								<span class="bar-label">{day.label}</span>
+							</div>
+						{/each}
 					</div>
 				</div>
 
 				<div class="milestone-box">
 					<div class="milestone-icon">🏆</div>
 					<div class="milestone-text">
-						<span class="milestone-label">Récord Histórico Semanal</span>
-						<span class="milestone-val">6,500 metros</span>
+						<span class="milestone-label">Récord Histórico Mensual</span>
+						<span class="milestone-val">{monthlyRecord ? `${(monthlyRecord / 1000).toFixed(1)}k metros` : '-'}</span>
 					</div>
-					<div class="milestone-date">Oct 2025</div>
+					<div class="milestone-date">{monthlyRecordDate ? monthlyRecordDate : '-'}</div>
 				</div>
 			</div>
 		</div>
@@ -1055,6 +1086,29 @@
 		color: #999;
 		margin-top: 5px;
 		font-weight: 600;
+	}
+
+	.bar-group {
+		position: relative;
+	}
+
+	.bar-value {
+		display: none;
+		position: absolute;
+		top: -20px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: #333;
+		color: white;
+		padding: 2px 5px;
+		border-radius: 4px;
+		font-size: 10px;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.bar-group:hover .bar-value {
+		display: block;
 	}
 	.milestone-box {
 		background: #fffdf5;
