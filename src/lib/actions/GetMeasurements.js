@@ -10,7 +10,7 @@ export class GetMeasurements {
 		try {
 			const data = {
 				deportista: athleteId,
-				sort: 'fecha:desc',
+				sort: 'fecha:desc,id:desc',
 				per_page: 2,
 				page: 0
 			};
