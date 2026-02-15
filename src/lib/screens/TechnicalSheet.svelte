@@ -517,22 +517,14 @@
 			{/if}
 		{/if}
 
-		<!-- SECCIÓN PERFORMANCE (Con bloqueo) -->
-		<div class="perf-wrapper">
-			{#if !isPerformance}
-				<div class="lock-overlay">
-					<div class="lock-icon">🔒</div>
-					<div class="lock-text">Plan Alto Rendimiento</div>
-					<div class="lock-subtext">Desbloquea tu máximo potencial.</div>
-				</div>
-			{/if}
-
-			<div class="locked-section" class:blur-content={!isPerformance}>
+		<!-- SECCIÓN VOLUMEN ACTIVIDAD (Para todos los planes) -->
+		{#if chartData && chartData.length > 0 && chartData.some(d => d.distance > 0)}
+			<div class="activity-section">
 				<div class="chart-section">
 					<div class="chart-title">
 						<span>Volumen Actividad</span>
 						<span style="color:var(--primary-blue)"
-							>Total: {(totalDistance / 1000).toFixed(1)}k</span
+							>Total: {totalDistance ? (totalDistance / 1000).toFixed(1) : '0'}k</span
 						>
 					</div>
 					<div class="bar-chart">
@@ -548,13 +540,34 @@
 					</div>
 				</div>
 
-				<div class="milestone-box">
-					<div class="milestone-icon">🏆</div>
-					<div class="milestone-text">
-						<span class="milestone-label">Récord Histórico Mensual</span>
-						<span class="milestone-val">{monthlyRecord ? `${(monthlyRecord / 1000).toFixed(1)}k metros` : '-'}</span>
+				{#if monthlyRecord}
+					<div class="milestone-box">
+						<div class="milestone-icon">🏆</div>
+						<div class="milestone-text">
+							<span class="milestone-label">Récord Histórico Mensual</span>
+							<span class="milestone-val">{(monthlyRecord / 1000).toFixed(1)}k metros</span>
+						</div>
+						<div class="milestone-date">{monthlyRecordDate || '-'}</div>
 					</div>
-					<div class="milestone-date">{monthlyRecordDate ? monthlyRecordDate : '-'}</div>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- SECCIÓN PERFORMANCE (Con bloqueo) - Métricas Avanzadas -->
+		<div class="perf-wrapper">
+			{#if !isPerformance}
+				<div class="lock-overlay">
+					<div class="lock-icon">🔒</div>
+					<div class="lock-text">Métricas Avanzadas</div>
+					<div class="lock-subtext">Plan Alto Rendimiento</div>
+				</div>
+			{/if}
+
+			<div class="locked-section" class:blur-content={!isPerformance}>
+				<div class="advanced-metrics-placeholder">
+					<div class="placeholder-icon">📊</div>
+					<p class="placeholder-text">Análisis de rendimiento detallado</p>
+					<p class="placeholder-subtext">Métricas avanzadas • Comparativas • Evolución</p>
 				</div>
 			</div>
 		</div>
@@ -568,16 +581,24 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		justify-content: space-between;
 		text-align: left;
 		background-color: #fcfaf8;
-		padding: 0.75rem;
+		padding: 0.5rem;
+		padding-bottom: 0.75rem;
 		box-sizing: border-box;
+		overflow: hidden;
+	}
+	.content-scroll {
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		margin-bottom: 0.5rem;
+		padding-right: 0.25rem;
 	}
 	.flip-btn {
 		position: absolute;
-		top: 12px;
-		right: 12px;
+		top: 8px;
+		right: 8px;
 		background: #f4eee7;
 		border: none;
 		width: 36px;
@@ -594,11 +615,12 @@
 	}
 	.btn-action {
 		width: 100%;
-		padding: 10px;
+		padding: 12px;
 		border-radius: 12px;
 		font-weight: 600;
 		cursor: pointer;
-		font-size: 13px;
+		font-size: 14px;
+		flex-shrink: 0;
 	}
 	.btn-ghost {
 		background: transparent;
@@ -606,9 +628,9 @@
 		border: 1px solid var(--primary-blue);
 	}
 	.stats-header {
-		margin-bottom: 10px;
+		margin-bottom: 8px;
 		border-bottom: 1px solid #f0f0f0;
-		padding-bottom: 8px;
+		padding-bottom: 6px;
 	}
 	.stats-header h3 {
 		margin: 0;
@@ -636,25 +658,25 @@
 	.basic-stats-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-		margin-bottom: 8px;
+		gap: 6px;
+		margin-bottom: 6px;
 	}
 	.stat-box {
 		background: #f4eee7;
-		padding: 8px;
+		padding: 6px;
 		border-radius: 16px;
 	}
 	.stat-box small {
 		display: block;
 		color: #9c7849;
-		font-size: 10px;
+		font-size: 9px;
 		text-transform: uppercase;
-		margin-bottom: 2px;
+		margin-bottom: 1px;
 	}
 	.stat-box strong {
 		display: block;
 		color: #1c150d;
-		font-size: 16px;
+		font-size: 14px;
 		font-weight: 800;
 	}
 	.unit {
@@ -665,13 +687,13 @@
 	.composition-container {
 		display: flex;
 		justify-content: space-between;
-		margin-bottom: 8px;
+		margin-bottom: 6px;
 	}
 	.comp-card {
 		background: white;
 		border: 1px solid #eee;
 		border-radius: 16px;
-		padding: 6px 4px;
+		padding: 5px 3px;
 		width: 48%;
 		text-align: center;
 		box-sizing: border-box;
@@ -687,10 +709,10 @@
 		box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
 	}
 	.chart-donut {
-		width: 45px;
-		height: 45px;
+		width: 40px;
+		height: 40px;
 		border-radius: 50%;
-		margin: 0 auto 4px;
+		margin: 0 auto 3px;
 		position: relative;
 		background: conic-gradient(var(--chart-color) var(--percent), #e0e7ff 0);
 		display: flex;
@@ -699,8 +721,8 @@
 	}
 	.chart-donut::after {
 		content: '';
-		width: 34px;
-		height: 34px;
+		width: 30px;
+		height: 30px;
 		background: white;
 		border-radius: 50%;
 		position: absolute;
@@ -732,7 +754,7 @@
 	.level-card-container {
 		display: flex;
 		justify-content: center;
-		margin-bottom: 10px;
+		margin-bottom: 8px;
 	}
 	.level-card-header {
 		width: 100%;
@@ -754,7 +776,7 @@
 		width: 100%;
 		background: var(--level-color, #34495e);
 		color: white;
-		padding: 12px 16px;
+		padding: 10px 12px;
 		border-radius: 16px;
 		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 		cursor: pointer;
@@ -771,7 +793,7 @@
 		margin-bottom: 8px;
 	}
 	.level-icon-compact {
-		font-size: 32px;
+		font-size: 28px;
 		line-height: 1;
 	}
 	.level-info-compact {
@@ -780,12 +802,12 @@
 	}
 	.level-name-compact {
 		margin: 0;
-		font-size: 16px;
+		font-size: 14px;
 		font-weight: 800;
 		line-height: 1.2;
 	}
 	.level-progress-compact {
-		font-size: 11px;
+		font-size: 10px;
 		opacity: 0.9;
 		font-weight: 500;
 	}
@@ -847,8 +869,8 @@
 	.measurements-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
-		gap: 8px;
-		margin-bottom: 10px;
+		gap: 6px;
+		margin-bottom: 8px;
 	}
 	.measure-box {
 		background: #fff;
@@ -883,8 +905,12 @@
 		font-weight: 400;
 		color: #7f8c8d;
 	}
+	.activity-section {
+		margin-bottom: 8px;
+	}
 	.perf-wrapper {
 		position: relative;
+		margin-top: 8px;
 	}
 	.locked-section {
 		transition: filter 0.3s ease;
@@ -893,6 +919,28 @@
 		filter: blur(6px);
 		pointer-events: none;
 		user-select: none;
+	}
+	.advanced-metrics-placeholder {
+		padding: 15px 15px;
+		text-align: center;
+		background: linear-gradient(135deg, #f8f9fa, #ffffff);
+		border-radius: 12px;
+		border: 1px solid #e0e0e0;
+	}
+	.placeholder-icon {
+		font-size: 32px;
+		margin-bottom: 5px;
+	}
+	.placeholder-text {
+		font-size: 12px;
+		font-weight: 700;
+		color: #2c3e50;
+		margin: 0 0 3px 0;
+	}
+	.placeholder-subtext {
+		font-size: 10px;
+		color: #7f8c8d;
+		margin: 0;
 	}
 	.objectives-section {
 		margin-top: 20px;
@@ -1048,11 +1096,11 @@
 		margin-bottom: 8px;
 	}
 	.chart-title {
-		font-size: 11px;
+		font-size: 10px;
 		font-weight: 700;
 		color: #888;
 		text-transform: uppercase;
-		margin-bottom: 8px;
+		margin-bottom: 6px;
 		display: flex;
 		justify-content: space-between;
 	}
@@ -1060,9 +1108,9 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: stretch;
-		height: 50px;
+		height: 40px;
 		padding: 0 5px;
-		margin-bottom: 6px;
+		margin-bottom: 5px;
 		border-bottom: 1px solid #eee;
 	}
 	.bar-group {
@@ -1115,33 +1163,33 @@
 		background: #fffdf5;
 		border: 1px dashed var(--accent-gold);
 		border-radius: 12px;
-		padding: 5px 8px;
+		padding: 4px 6px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 	.milestone-icon {
-		font-size: 16px;
-		margin-right: 8px;
+		font-size: 14px;
+		margin-right: 6px;
 	}
 	.milestone-text {
 		flex: 1;
 	}
 	.milestone-label {
 		display: block;
-		font-size: 8px;
+		font-size: 7px;
 		color: #b08d55;
 		text-transform: uppercase;
 		font-weight: 700;
 	}
 	.milestone-val {
 		display: block;
-		font-size: 12px;
+		font-size: 11px;
 		font-weight: bold;
 		color: #333;
 	}
 	.milestone-date {
-		font-size: 9px;
+		font-size: 8px;
 		color: #aaa;
 	}
 
@@ -1331,16 +1379,16 @@
 
 	/* Leaderboard Styles */
 	.leaderboard-section {
-		margin-top: 10px;
-		margin-bottom: 10px;
+		margin-top: 8px;
+		margin-bottom: 8px;
 	}
 	.leaderboard-upsell,
 	.leaderboard-cta {
 		border-radius: 16px;
-		padding: 10px 12px;
+		padding: 8px 10px;
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 8px;
 		cursor: pointer;
 	}
 	.leaderboard-upsell {
@@ -1373,16 +1421,16 @@
 		box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
 	}
 	.cta-icon {
-		font-size: 24px;
+		font-size: 20px;
 	}
 	.cta-text h4 {
-		margin: 0 0 2px 0;
-		font-size: 14px;
+		margin: 0 0 1px 0;
+		font-size: 12px;
 		font-weight: 700;
 	}
 	.cta-text p {
 		margin: 0;
-		font-size: 12px;
+		font-size: 11px;
 		opacity: 0.9;
 	}
 	.cta-arrow {
