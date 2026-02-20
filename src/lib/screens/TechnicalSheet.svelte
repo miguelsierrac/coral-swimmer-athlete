@@ -518,7 +518,7 @@
 		{/if}
 
 		<!-- SECCIÓN VOLUMEN ACTIVIDAD (Para todos los planes) -->
-		{#if chartData && chartData.length > 0 && chartData.some(d => d.distance > 0)}
+		{#if chartData.some(d => d.distance > 0) || totalDistance || monthlyRecord}
 			<div class="activity-section">
 				<div class="chart-section">
 					<div class="chart-title">
