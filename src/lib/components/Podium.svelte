@@ -191,18 +191,21 @@
 	}
 
 	.podium-item.first .podium-base {
-		min-height: 135px;
+		min-height: 180px;
+		max-height: 200px;
 		background: #2563eb;
 		box-shadow: 0 -5px 15px rgba(37, 99, 235, 0.3);
 		padding: 48px 6px 8px;
 	}
 
 	.podium-item.second .podium-base {
-		min-height: 102px;
+		min-height: 150px;
+		max-height: 170px;
 	}
 
 	.podium-item.third .podium-base {
-		min-height: 95px;
+		min-height: 120px;
+		max-height: 140px;
 	}
 
 	.podium-info {
