@@ -2,6 +2,7 @@
 	import { onMount, getContext } from 'svelte';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
 	import Podium from '$lib/components/Podium.svelte';
+	import AchievementsView from '$lib/components/AchievementsView.svelte';
 	import {
 		shareAchievement,
 		generateAchievementText,
@@ -16,11 +17,13 @@
 	export let userLevel = null; // Current level object
 	export let specialty = null; // Optional specialty info
 	export let totalDistance = null; // Total distance swam
+	export let userName = ''; // User's name for achievements greeting
+	export let initialTab = 'ranking'; // Initial tab to display
 
 	const provider = getContext('provider');
 	let rankedUsers = [];
 	let selectedLevelId = null;
-	let activeTab = 'ranking'; // 'ranking' or 'badges'
+	let activeTab = initialTab; // 'ranking' or 'badges'
 	let selectedBadge = null;
 	let popoverPosition = { top: 0, left: 0 };
 	let leaderboardData = [];
@@ -325,172 +328,40 @@ title="Compartir mi posición"
 			{:else}
 
 				<!-- Tab de Mis Logros -->
-
-				<div class="level-hero" style="--lvl-color: {userLevel?.color || '#4285F4'};">
-
-					<div class="level-icon-large">
-
-						<span>{userLevel?.icono || '🎯'}</span>
-
-					</div>
-
-					<h3 class="level-title" style="color: {userLevel?.color || '#4285F4'};">
-
-						Nivel {userLevel?.nombre || 'Desconocido'}
-
-					</h3>
-
-					<p class="level-desc">{userLevel?.descripcion || ''}</p>
-
-	
-
-					{#if specialty}
-
-						<div class="specialty-chips-hero">
-
-							<div class="specialty-chip-hero tool-chip">
-
-								{specialty.tool === 'Monoaleta' ? '🦶' : '🏊'}
-
-								{specialty.tool}
-
-							</div>
-
-							<div class="specialty-chip-hero mode-chip">
-
-								{specialty.mode === 'Velocidad' ? '⚡' : '🌊'}
-
-								{specialty.mode}
-
-							</div>
-
-						</div>
-
-					{/if}
-
-				</div>
-
-	
-
-				<div class="badges-section">
-
-					<h4>Mis Insignias <span class="points-total">{totalBadgePoints} Pts en Logros</span></h4>
-
-	
-
-					<button
-
-						on:click={handleShareAchievements}
-
-						class="share-btn mb-4"
-
-						title="Compartir mis logros"
-
-					>
-
-						<span>📤</span>
-
-						<span>Compartir Logros</span>
-
-					</button>
-
-	
-
-					<div class="badge-grid-compact">
-
-						{#if badges && badges.length > 0}
-
-							{#each badges as badge (badge.id)}
-
-								{@const gradeClass = badge.progress
-
-									? `badge-item-${badge.progress}`
-
-									: 'badge-item-locked'}
-
-								<div
-
-									class="badge-item-compact {gradeClass}"
-
-									role="button"
-
-									tabindex="0"
-
-									on:click={(e) => handleBadgeClick(e, badge)}
-
-									on:keydown={(e) => {
-
-										if (e.key === 'Enter') handleBadgeClick(e, badge);
-
-									}}
-
-								>
-
-									{#if badge.progress}
-
-										<span class="badge-tier-label-compact">{badge.progress}</span>
-
-									{/if}
-
-									<span class="badge-icon-compact">{badge.icono}</span>
-
-									<span class="badge-name-compact">{badge.nombre}</span>
-
-								</div>
-
-							{/each}
-
-						{:else}
-
-							<p class="no-badges">No hay insignias disponibles.</p>
-
-						{/if}
-
-					</div>
-
-				</div>
-
-			{/if}
-
-		</div>
+			<AchievementsView
+				{userLevel}
+				{allLevels}
+				{badges}
+				{totalBadgePoints}
+				onShareAchievements={handleShareAchievements}
+				onBadgeClick={handleBadgeClick}
+			/>
+
+		{/if}
 
 	</div>
 
-	
+</div>
 
-	{#if selectedBadge}
+{#if selectedBadge}
+	<div
+		class="popover-backdrop"
+		on:click={closePopover}
+		on:keydown={(e) => {
+			if (e.key === 'Enter') closePopover();
+		}}
+		role="button"
+		tabindex="0"
+	></div>
 
-		<div
+	<div
+		class="popover-container"
+		style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
+	>
+		<BadgePopover badge={selectedBadge} progress={selectedBadge.progress} />
+	</div>
 
-			class="popover-backdrop"
-
-			on:click={closePopover}
-
-			on:keydown={(e) => {
-
-				if (e.key === 'Enter') closePopover();
-
-			}}
-
-			role="button"
-
-			tabindex="0"
-
-		></div>
-
-		<div
-
-			class="popover-container"
-
-			style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
-
-		>
-
-			<BadgePopover badge={selectedBadge} progress={selectedBadge.progress} />
-
-		</div>
-
-	{/if}
+{/if}
 
 	
 

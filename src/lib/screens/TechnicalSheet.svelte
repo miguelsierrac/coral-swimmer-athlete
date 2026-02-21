@@ -28,6 +28,7 @@
 	export let allLevels = [];
 	export let weeklyDistance = [];
 	export let currentUserID;
+	export let userName = ''; // User's name for achievements greeting
 	export let monthlyRecord = null;
 	export let monthlyRecordDate = null;
 	export let totalDistance = null;
@@ -93,11 +94,11 @@
 	}
 
 	let showSkillsPopup = false;
-	let showObjectivesPopup = false;
 	let showVisceralFatPopup = false;
 	let selectedBadge = null;
 	let popoverPosition = { top: 0, left: 0 };
 	let showLeaderboard = false;
+	let leaderboardInitialTab = 'ranking'; // Control which tab to show in leaderboard
 
 	function handleBadgeClick(event, badge) {
 		if (selectedBadge && selectedBadge.id === badge.id) {
@@ -119,15 +120,16 @@
 	function toggleLeaderboard() {
 		if (!showLeaderboard) {
 			trackViewLeaderboard();
+			leaderboardInitialTab = 'ranking';
 		}
 		showLeaderboard = !showLeaderboard;
 	}
 
 	function toggleObjectivesPopup() {
-		if (!showObjectivesPopup) {
-			trackViewAchievements();
-		}
-		showObjectivesPopup = !showObjectivesPopup;
+		// Track analytics and open leaderboard with achievements tab
+		trackViewAchievements();
+		leaderboardInitialTab = 'badges';
+		showLeaderboard = true;
 	}
 
 	function toggleVisceralFatPopup() {
@@ -204,57 +206,6 @@
 					<div class="table-cell">Muy Alto / Obesidad Visceral</div>
 					<div class="table-cell">Riesgo elevado de enfermedades metabólicas.</div>
 				</div>
-			</div>
-		</div>
-	</div>
-{/if}
-
-{#if showObjectivesPopup}
-	<div
-		class="popup-overlay"
-		role="button"
-		tabindex="0"
-		on:click={toggleObjectivesPopup}
-		on:keydown={(e) => {
-			if (e.key === 'Enter') toggleObjectivesPopup();
-		}}
-	>
-		<div class="popup-content objectives-popup">
-			<button class="popup-close" on:click={toggleObjectivesPopup}>&times;</button>
-			<h3>🎯 Objetivos del Nivel {level?.nombre || ''}</h3>
-			<p class="popup-subtitle">Progreso: {stats.levelProgress || 0}% completado</p>
-
-			<div class="badge-grid">
-				{#if badges && badges.length > 0}
-					{#each badges as badge (badge.id)}
-						{@const gradeClass = badge.progress
-							? `badge-slot-${badge.progress}`
-							: 'badge-slot-locked'}
-						<div
-							class="badge-slot {gradeClass}"
-							role="button"
-							tabindex="0"
-							on:click={(e) => {
-								e.stopPropagation();
-								handleBadgeClick(e, badge);
-							}}
-							on:keydown={(e) => {
-								if (e.key === 'Enter') {
-									e.stopPropagation();
-									handleBadgeClick(e, badge);
-								}
-							}}
-						>
-							{#if badge.progress}
-								<div class="tier-dot tier-{badge.progress}"></div>
-							{/if}
-							<span class="b-icon">{badge.icono}</span>
-							<span class="b-name">{badge.nombre}</span>
-						</div>
-					{/each}
-				{:else}
-					<p class="no-objectives">No hay objetivos definidos para este nivel.</p>
-				{/if}
 			</div>
 		</div>
 	</div>
@@ -510,6 +461,7 @@
 								userLevel={level}
 								specialty={stats.specialty}
 								{totalDistance}
+								initialTab={leaderboardInitialTab}
 							/>
 						</section>
 					</div>
@@ -699,16 +651,7 @@
 		text-align: center;
 		box-sizing: border-box;
 	}
-	.comp-card.clickable {
-		cursor: pointer;
-		transition:
-			transform 0.2s,
-			box-shadow 0.2s;
-	}
-	.comp-card.clickable:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
-	}
+
 	.chart-donut {
 		width: 40px;
 		height: 40px;
@@ -947,100 +890,7 @@
 		color: #7f8c8d;
 		margin: 0;
 	}
-	.objectives-section {
-		margin-top: 20px;
-	}
-	.section-title {
-		font-size: 14px;
-		font-weight: 700;
-		color: #1c150d;
-		margin-bottom: 10px;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-	.badge-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 10px;
-		margin-top: 8px;
-	}
-	.badge-slot {
-		aspect-ratio: 1;
-		background: white;
-		border-radius: 16px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
-		cursor: pointer;
-		position: relative;
-		border: 2px solid transparent;
-		transition: transform 0.2s;
-	}
-	.badge-slot:hover {
-		transform: translateY(-3px);
-	}
-	.b-icon {
-		font-size: 24px;
-		margin-bottom: 4px;
-		filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
-	}
-	.b-name {
-		font-size: 9px;
-		font-weight: 700;
-		color: #444;
-		text-align: center;
-		line-height: 1.2;
-	}
-	.tier-dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		position: absolute;
-		top: 8px;
-		right: 8px;
-	}
-	.tier-dot.tier-bronce {
-		background: linear-gradient(135deg, #e7cbae, #cd7f32);
-	}
-	.tier-dot.tier-plata {
-		background: linear-gradient(135deg, #f0f0f0, #c0c0c0);
-	}
-	.tier-dot.tier-oro {
-		background: linear-gradient(135deg, #fff7cc, #ffd700);
-	}
-	.badge-slot-bronce {
-		border-color: #cd7f32;
-		background: linear-gradient(to bottom right, #fff, #fff5eb);
-	}
-	.badge-slot-plata {
-		border-color: #c0c0c0;
-		background: linear-gradient(to bottom right, #fff, #f5f5f5);
-	}
-	.badge-slot-oro {
-		border-color: #ffd700;
-		background: linear-gradient(to bottom right, #fff, #fffee0);
-		box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
-	}
-	.badge-slot-locked {
-		opacity: 0.5;
-		background: #f0f0f0;
-		border: 2px dashed #ddd;
-		filter: grayscale(1);
-	}
-	.badge-slot-locked .b-icon {
-		opacity: 0.3;
-	}
-	.no-objectives {
-		font-size: 12px;
-		color: #999;
-		text-align: center;
-		padding: 20px;
-		background-color: #f9f9f9;
-		border-radius: 12px;
-		grid-column: 1 / -1;
-	}
+
 	.popover-backdrop {
 		position: fixed;
 		top: 0;
@@ -1223,9 +1073,7 @@
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 		z-index: 101;
 	}
-	.popup-content.objectives-popup {
-		max-height: 85vh;
-	}
+
 	.popup-close {
 		position: fixed;
 		top: 15px;
