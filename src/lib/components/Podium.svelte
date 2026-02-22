@@ -2,6 +2,7 @@
 	export let users = []; // Top 3 users
 	export let getAvatarUrl;
 	export let levelIcon = '🔱'; // Level icon to display for first place
+	export let currentUserID = null; // Current user ID to highlight
 
 	// Ensure we have exactly 3 positions, filling with null if needed
 	const top3Users = [
@@ -28,6 +29,7 @@
 				class:second={isSecond}
 				class:third={isThird}
 				class:empty={!user}
+				class:current-user={user && currentUserID && user.id_deportista == currentUserID}
 			>
 				{#if user}
 					<div class="avatar-container">
@@ -44,6 +46,14 @@
 								>{user.nombre_deportista}<br />{user.apellido_deportista}</span
 							>
 							<span class="podium-score">{new Intl.NumberFormat('es-ES').format(user.puntaje_total)}</span>
+							{#if user.posicion_anterior && user.posicion_anterior !== user.rank}
+								{@const cambio = user.posicion_anterior - user.rank}
+								{#if cambio > 0}
+									<span class="rank-change-podium up" title="Subió {cambio} posiciones">↑{cambio}</span>
+								{:else if cambio < 0}
+									<span class="rank-change-podium down" title="Bajó {Math.abs(cambio)} posiciones">↓{Math.abs(cambio)}</span>
+								{/if}
+							{/if}
 							{#if isFirst && levelIcon}
 								<span class="level-icon">{levelIcon}</span>
 							{/if}
@@ -246,5 +256,52 @@
 		margin-top: 4px;
 		color: #fbbf24;
 		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+	}
+
+	/* Highlight current user */
+	.podium-item.current-user .podium-avatar-wrapper {
+		box-shadow: 0 0 0 3px #4285f4, 0 4px 12px rgba(66, 133, 244, 0.4);
+		animation: pulse-glow 2s infinite;
+	}
+
+	.podium-item.current-user .podium-base {
+		background: linear-gradient(180deg, #4285f4 0%, #3b82f6 100%);
+		box-shadow: 0 -5px 20px rgba(66, 133, 244, 0.4), inset 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.podium-item.first.current-user .podium-base {
+		background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+		box-shadow: 0 -5px 25px rgba(59, 130, 246, 0.5), inset 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	@keyframes pulse-glow {
+		0%, 100% {
+			box-shadow: 0 0 0 3px #4285f4, 0 4px 12px rgba(66, 133, 244, 0.4);
+		}
+		50% {
+			box-shadow: 0 0 0 3px #4285f4, 0 6px 20px rgba(66, 133, 244, 0.6);
+		}
+	}
+
+	.rank-change-podium {
+		font-size: 10px;
+		font-weight: 800;
+		padding: 2px 5px;
+		border-radius: 10px;
+		display: inline-flex;
+		align-items: center;
+		gap: 1px;
+		margin-top: 4px;
+		line-height: 1;
+	}
+
+	.rank-change-podium.up {
+		color: #10b981;
+		background: rgba(209, 250, 229, 0.9);
+	}
+
+	.rank-change-podium.down {
+		color: #ef4444;
+		background: rgba(254, 226, 226, 0.9);
 	}
 </style>

@@ -32,6 +32,8 @@
 	export let monthlyRecord = null;
 	export let monthlyRecordDate = null;
 	export let totalDistance = null;
+	export let newBadges = []; // Nuevos badges completados
+	export let showNewIndicators = false; // Mostrar indicadores de novedad
 
 	const dispatch = createEventDispatcher();
 
@@ -276,6 +278,10 @@
 						}}
 						style="background: {stats.levelColor};"
 					>
+						{#if showNewIndicators && newBadges.length > 0}
+							<div class="new-indicator-pulse"></div>
+							<span class="new-badge-count">{newBadges.length}</span>
+						{/if}
 						<div class="level-ring-container">
 							<div
 								class="donut-ring"
@@ -358,6 +364,10 @@
 							}}
 							style="background: {stats.levelColor};"
 						>
+							{#if showNewIndicators && newBadges.length > 0}
+								<div class="new-indicator-pulse"></div>
+								<span class="new-badge-count">{newBadges.length}</span>
+							{/if}
 							<div class="level-header-content">
 								<span class="level-icon-compact">{stats.levelIcon}</span>
 								<div class="level-info-compact">
@@ -423,6 +433,10 @@
 							if (e.key === 'Enter') toggleLeaderboard();
 						}}
 					>
+						{#if showNewIndicators && newBadges.length > 0}
+							<div class="new-indicator-pulse-leaderboard"></div>
+							<span class="new-badge-count-leaderboard">{newBadges.length}</span>
+						{/if}
 						<div class="cta-icon">🏆</div>
 						<div class="cta-text">
 							<h4>Tabla de Posiciones</h4>
@@ -725,6 +739,7 @@
 		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 		cursor: pointer;
 		transition: all 0.3s ease;
+		position: relative;
 	}
 	.level-card-header-compact:hover {
 		transform: translateY(-3px);
@@ -1243,6 +1258,7 @@
 		align-items: center;
 		gap: 8px;
 		cursor: pointer;
+		position: relative;
 	}
 	.leaderboard-upsell {
 		background: #f5f5f5;
@@ -1317,5 +1333,73 @@
 		max-width: 400px;
 		max-height: 80vh;
 		overflow-y: auto;
+	}
+
+	/* New Achievement Indicators */
+	.new-indicator-pulse {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		width: 12px;
+		height: 12px;
+		background: #ff4444;
+		border-radius: 50%;
+		animation: pulse-indicator 2s infinite;
+		z-index: 10;
+	}
+
+	.new-badge-count {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		background: #ff4444;
+		color: white;
+		font-size: 10px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 10px;
+		min-width: 18px;
+		text-align: center;
+		box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
+		z-index: 11;
+	}
+
+	.new-indicator-pulse-leaderboard {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		width: 10px;
+		height: 10px;
+		background: #ffd700;
+		border-radius: 50%;
+		animation: pulse-indicator 2s infinite;
+		z-index: 10;
+	}
+
+	.new-badge-count-leaderboard {
+		position: absolute;
+		top: 6px;
+		right: 6px;
+		background: #ffd700;
+		color: #333;
+		font-size: 9px;
+		font-weight: 800;
+		padding: 2px 5px;
+		border-radius: 10px;
+		min-width: 16px;
+		text-align: center;
+		box-shadow: 0 2px 6px rgba(255, 215, 0, 0.5);
+		z-index: 11;
+	}
+
+	@keyframes pulse-indicator {
+		0%, 100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.3);
+			opacity: 0.7;
+		}
 	}
 </style>

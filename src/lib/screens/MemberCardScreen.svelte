@@ -17,6 +17,22 @@
 	let tourInstance;
 	let isTransitioning = false;
 	let tourInitialized = false;
+	let hasViewedAchievements = false; // Track if user has viewed the back
+
+	// Detectar novedades en gamificación
+	$: completedBadges = badges.filter(b => b.progress !== null && b.progress !== undefined);
+	$: hasPendingRewards = completedBadges.length > 0;
+	$: recentAchievements = completedBadges.filter(b => {
+		// Opcional: si tienes timestamp de cuándo se completó, puedes filtrar por recientes
+		// Por ahora, cualquier badge completado cuenta como "reciente"
+		return true;
+	});
+	$: hasNewAchievements = recentAchievements.length > 0 && !hasViewedAchievements;
+
+	// Mark achievements as viewed when card is flipped
+	$: if (isFlipped && !hasViewedAchievements) {
+		hasViewedAchievements = true;
+	}
 
 	// Configure tour steps based on athlete tier
 	let tourSteps = [];
@@ -228,7 +244,15 @@
 				<!-- CARA FRONTAL -->
 				<div class="card-face card-front">
 					{#if athlete.tier !== 'standard'}
-						<button class="flip-btn" on:click={() => (isFlipped = !isFlipped)}>
+						<button 
+							class="flip-btn" 
+							class:has-notifications={hasNewAchievements}
+							on:click={() => (isFlipped = !isFlipped)}
+							title={hasNewAchievements ? '¡Tienes logros nuevos!' : 'Ver ficha técnica'}
+						>
+							{#if hasNewAchievements}
+								<span class="notification-dot"></span>
+							{/if}
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								width="24"
@@ -326,7 +350,7 @@
 									{athlete.surname}
 								</p>
 							</div>
-							<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-28">
+							<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-28 relative">
 								{#if athlete.photo}
 									<div
 										class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl max-h-40 w-full"
@@ -486,6 +510,24 @@
 						</div>
 					</div>
 
+					<!-- Banner Teaser -->
+					{#if hasNewAchievements && athlete.tier !== 'standard'}
+						<button 
+							class="teaser-banner"
+							on:click={() => (isFlipped = !isFlipped)}
+						>
+							<span class="teaser-icon">🌟</span>
+							<span class="teaser-text">
+								{#if completedBadges.length === 1}
+									¡Tienes 1 objetivo completado! Gira el carnet
+								{:else}
+									¡Tienes {completedBadges.length} objetivos completados! Gira el carnet
+								{/if}
+							</span>
+							<span class="teaser-chevron">›</span>
+						</button>
+					{/if}
+
 					{#if !athlete.expiration_date || expired(convertDateToUTC(new Date(athlete.expiration_date)))}
 						<div class="absolute top-60 right-8 left-8 z-10">
 							<span class="stamp is-nope">Vencido</span>
@@ -507,6 +549,8 @@
 						{isLoading}
 						allLevels={gamificationLevels}
 						{currentUserID}
+						newBadges={recentAchievements}
+						showNewIndicators={isFlipped && recentAchievements.length > 0}
 						on:flip={() => (isFlipped = !isFlipped)}
 					/>
 				</div>
@@ -617,6 +661,125 @@
 		animation: pulse-attention 2s infinite;
 	}
 
+	/* Botón de flip con notificaciones */
+	.flip-btn.has-notifications {
+		background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+		color: white;
+		box-shadow: 0 4px 16px rgba(66, 133, 244, 0.5);
+		animation: bounce-attention 1s ease-in-out infinite;
+	}
+
+	.flip-btn.has-notifications:hover {
+		transform: scale(1.1);
+		box-shadow: 0 6px 20px rgba(66, 133, 244, 0.6);
+	}
+
+	/* Punto de notificación en el botón */
+	.notification-dot {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		width: 12px;
+		height: 12px;
+		background: #ff4444;
+		border: 2px solid white;
+		border-radius: 50%;
+		animation: pulse-dot 1.5s ease-in-out infinite;
+	}
+
+	/* Banner Teaser */
+	.teaser-banner {
+		position: absolute;
+		bottom: 16px;
+		left: 16px;
+		right: 16px;
+		background: rgba(66, 133, 244, 0.95);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border: none;
+		padding: 12px 16px;
+		border-radius: 16px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		cursor: pointer;
+		z-index: 15;
+		box-shadow: 0 8px 24px rgba(66, 133, 244, 0.4);
+		transition: all 0.3s ease;
+		animation: slide-up 0.5s ease-out;
+	}
+
+	.teaser-banner:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 32px rgba(66, 133, 244, 0.5);
+		background: rgba(66, 133, 244, 1);
+	}
+
+	.teaser-banner:active {
+		transform: translateY(0);
+	}
+
+	.teaser-icon {
+		font-size: 20px;
+		animation: spin-subtle 3s linear infinite;
+	}
+
+	.teaser-text {
+		flex: 1;
+		color: white;
+		font-size: 13px;
+		font-weight: 600;
+		text-align: left;
+		line-height: 1.3;
+	}
+
+	.teaser-chevron {
+		font-size: 24px;
+		color: white;
+		font-weight: 700;
+	}
+
+	/* Animaciones */
+	@keyframes bounce-attention {
+		0%, 100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+	}
+
+	@keyframes pulse-dot {
+		0%, 100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.2);
+			opacity: 0.8;
+		}
+	}
+
+	@keyframes slide-up {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes spin-subtle {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
 	.help-tour-btn {
 		position: fixed;
 		bottom: 20px;
@@ -664,6 +827,12 @@
 		transition:
 			opacity 0s 0s,
 			transform 0.2s;
+	}
+
+	.card-inner.is-flipped .card-front .teaser-banner {
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0s 0s;
 	}
 
 	.stamp {
