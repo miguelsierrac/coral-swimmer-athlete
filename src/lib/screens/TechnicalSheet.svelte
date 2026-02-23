@@ -141,6 +141,22 @@
 	function handleModalContentClick(event) {
 		event.stopPropagation();
 	}
+
+	// Rank movement detection from localStorage snapshots
+	$: userRankChange = (() => {
+		if (!level?.id || !currentUserID || typeof localStorage === 'undefined') return null;
+		try {
+			const current = localStorage.getItem(`leaderboard_snapshot_${level.id}`);
+			const prev = localStorage.getItem(`leaderboard_snapshot_prev_${level.id}`);
+			if (!current || !prev) return null;
+			const currentRanks = JSON.parse(current);
+			const prevRanks = JSON.parse(prev);
+			const currentRank = currentRanks[currentUserID];
+			const prevRank = prevRanks[currentUserID];
+			if (!currentRank || !prevRank) return null;
+			return prevRank - currentRank; // positive = subió, negative = bajó
+		} catch { return null; }
+	})();
 </script>
 
 {#if showSkillsPopup && level && level.skills}
@@ -440,7 +456,15 @@
 						<div class="cta-icon">🏆</div>
 						<div class="cta-text">
 							<h4>Tabla de Posiciones</h4>
-							<p>¡Compite y mide tu progreso!</p>
+							<p>
+								{#if userRankChange !== null && userRankChange > 0}
+									<span class="rank-inline cta-up">▲{userRankChange}</span> ¡Subiste {userRankChange} posición{userRankChange > 1 ? 'es' : ''}!
+								{:else if userRankChange !== null && userRankChange < 0}
+									<span class="rank-inline cta-down">▼{Math.abs(userRankChange)}</span> Bajaste {Math.abs(userRankChange)} posición{Math.abs(userRankChange) > 1 ? 'es' : ''}
+								{:else}
+									¡Compite y mide tu progreso!
+								{/if}
+							</p>
 						</div>
 						<div class="cta-arrow">›</div>
 					</div>
@@ -484,14 +508,22 @@
 		{/if}
 
 		<!-- SECCIÓN VOLUMEN ACTIVIDAD (Para todos los planes) -->
-		{#if chartData.some(d => d.distance > 0) || totalDistance || monthlyRecord}
+		{#if chartData.some(d => d.distance > 0) || totalDistance || monthlyRecord || stats.puntaje_asistencia != null || stats.puntaje_distancia != null}
 			<div class="activity-section">
 				<div class="chart-section">
 					<div class="chart-title">
-						<span>Volumen Actividad</span>
-						<span style="color:var(--primary-blue)"
-							>Total: {totalDistance ? (totalDistance / 1000).toFixed(1) : '0'}k</span
-						>
+						<div class="chart-title-left">
+							<span>Volumen Actividad</span>
+							{#if stats.puntaje_asistencia != null}
+								<span class="pts-hint">✅ +{stats.puntaje_asistencia} pts asistencia</span>
+							{/if}
+						</div>
+						<div class="chart-title-right">
+							<span style="color:var(--primary-blue)">Total: {totalDistance ? (totalDistance / 1000).toFixed(1) : '0'}k</span>
+							{#if stats.puntaje_distancia != null}
+								<span class="pts-hint">🏊 +{stats.puntaje_distancia} pts</span>
+							{/if}
+						</div>
 					</div>
 					<div class="bar-chart">
 						{#each chartData as day}
@@ -973,6 +1005,23 @@
 		margin-bottom: 6px;
 		display: flex;
 		justify-content: space-between;
+		align-items: flex-start;
+	}
+	.chart-title-left,
+	.chart-title-right {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.chart-title-right {
+		align-items: flex-end;
+	}
+	.pts-hint {
+		font-size: 9px;
+		font-weight: 600;
+		color: #10b981;
+		text-transform: none;
+		letter-spacing: 0;
 	}
 	.bar-chart {
 		display: flex;
@@ -1259,6 +1308,7 @@
 		gap: 8px;
 		cursor: pointer;
 		position: relative;
+		overflow: visible;
 	}
 	.leaderboard-upsell {
 		background: #f5f5f5;
@@ -1306,6 +1356,27 @@
 		margin-left: auto;
 		font-size: 24px;
 		font-weight: bold;
+	}
+
+	.rank-inline {
+		display: inline-flex;
+		align-items: center;
+		font-size: 10px;
+		font-weight: 800;
+		padding: 1px 5px;
+		border-radius: 8px;
+		line-height: 1.4;
+		vertical-align: middle;
+	}
+	.rank-inline.cta-up {
+		color: #065f46;
+		background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+		border: 1px solid #6ee7b7;
+	}
+	.rank-inline.cta-down {
+		color: #991b1b;
+		background: linear-gradient(135deg, #fee2e2, #fecaca);
+		border: 1px solid #fca5a5;
 	}
 
 	/* Leaderboard Modal */

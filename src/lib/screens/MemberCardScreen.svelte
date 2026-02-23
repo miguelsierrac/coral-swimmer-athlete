@@ -19,6 +19,21 @@
 	let tourInitialized = false;
 	let hasViewedAchievements = false; // Track if user has viewed the back
 
+	// Puntajes guardados localmente para detectar cambios
+	function readStoredScores() {
+		try {
+			const saved = typeof localStorage !== 'undefined' && localStorage.getItem('last_seen_scores');
+			return saved ? JSON.parse(saved) : { asistencia: 0, distancia: 0 };
+		} catch { return { asistencia: 0, distancia: 0 }; }
+	}
+	function saveStoredScores(asistencia, distancia) {
+		try {
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem('last_seen_scores', JSON.stringify({ asistencia: asistencia ?? 0, distancia: distancia ?? 0 }));
+			}
+		} catch {}
+	}
+
 	// Detectar novedades en gamificación
 	$: completedBadges = badges.filter(b => b.progress !== null && b.progress !== undefined);
 	$: hasPendingRewards = completedBadges.length > 0;
@@ -27,11 +42,17 @@
 		// Por ahora, cualquier badge completado cuenta como "reciente"
 		return true;
 	});
-	$: hasNewAchievements = recentAchievements.length > 0 && !hasViewedAchievements;
+	$: hasScorePoints = (() => {
+		const stored = readStoredScores();
+		return (athlete?.puntaje_asistencia ?? 0) > stored.asistencia ||
+		       (athlete?.puntaje_distancia ?? 0) > stored.distancia;
+	})();
+	$: hasNewAchievements = (recentAchievements.length > 0 || hasScorePoints) && !hasViewedAchievements;
 
-	// Mark achievements as viewed when card is flipped
+	// Mark achievements as viewed when card is flipped, and save current scores
 	$: if (isFlipped && !hasViewedAchievements) {
 		hasViewedAchievements = true;
+		saveStoredScores(athlete?.puntaje_asistencia, athlete?.puntaje_distancia);
 	}
 
 	// Configure tour steps based on athlete tier
@@ -518,10 +539,23 @@
 						>
 							<span class="teaser-icon">🌟</span>
 							<span class="teaser-text">
-								{#if completedBadges.length === 1}
+								{#if completedBadges.length === 1 && hasScorePoints}
+									¡Tienes 1 objetivo y puntos nuevos este mes! Gira el carnet
+								{:else if completedBadges.length > 1 && hasScorePoints}
+									¡Tienes {completedBadges.length} objetivos y puntos nuevos este mes! Gira el carnet
+								{:else if completedBadges.length === 1}
 									¡Tienes 1 objetivo completado! Gira el carnet
-								{:else}
+								{:else if completedBadges.length > 1}
 									¡Tienes {completedBadges.length} objetivos completados! Gira el carnet
+								{:else}
+									¡Ganaste puntos este mes! Gira el carnet
+								{/if}
+								{#if athlete.puntaje_asistencia || athlete.puntaje_distancia}
+									<span class="teaser-points">
+										{#if athlete.puntaje_asistencia}+{athlete.puntaje_asistencia} pts asistencia{/if}
+										{#if athlete.puntaje_asistencia && athlete.puntaje_distancia}<br>{/if}
+										{#if athlete.puntaje_distancia}+{athlete.puntaje_distancia} pts volumen{/if}
+									</span>
 								{/if}
 							</span>
 							<span class="teaser-chevron">›</span>
@@ -731,6 +765,14 @@
 		font-weight: 600;
 		text-align: left;
 		line-height: 1.3;
+	}
+
+	.teaser-points {
+		display: block;
+		font-size: 11px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.8);
+		margin-top: 2px;
 	}
 
 	.teaser-chevron {

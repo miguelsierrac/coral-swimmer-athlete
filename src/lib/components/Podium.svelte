@@ -33,8 +33,20 @@
 			>
 				{#if user}
 					<div class="avatar-container">
-						<div class="podium-avatar-wrapper">
-							<img src={getAvatarUrl(user)} alt="Avatar" class="podium-avatar" />
+						<div class="avatar-with-badge">
+							<div class="podium-avatar-wrapper">
+								<img src={getAvatarUrl(user)} alt="Avatar" class="podium-avatar" />
+							</div>
+							{#if user.posicion_anterior !== null}
+								{@const cambio = user.posicion_anterior - user.rank}
+								{#if cambio > 0}
+									<span class="rank-badge-podium rank-badge-up">▲{cambio}</span>
+								{:else if cambio < 0}
+									<span class="rank-badge-podium rank-badge-down">▼{Math.abs(cambio)}</span>
+								{:else}
+									<span class="rank-badge-podium rank-badge-same">—</span>
+								{/if}
+							{/if}
 						</div>
 						<div class="medal-badge">
 							<span class="medal-number">{user.rank}</span>
@@ -46,14 +58,6 @@
 								>{user.nombre_deportista}<br />{user.apellido_deportista}</span
 							>
 							<span class="podium-score">{new Intl.NumberFormat('es-ES').format(user.puntaje_total)}</span>
-							{#if user.posicion_anterior && user.posicion_anterior !== user.rank}
-								{@const cambio = user.posicion_anterior - user.rank}
-								{#if cambio > 0}
-									<span class="rank-change-podium up" title="Subió {cambio} posiciones">↑{cambio}</span>
-								{:else if cambio < 0}
-									<span class="rank-change-podium down" title="Bajó {Math.abs(cambio)} posiciones">↓{Math.abs(cambio)}</span>
-								{/if}
-							{/if}
 							{#if isFirst && levelIcon}
 								<span class="level-icon">{levelIcon}</span>
 							{/if}
@@ -283,25 +287,48 @@
 		}
 	}
 
-	.rank-change-podium {
-		font-size: 10px;
+	.avatar-with-badge {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.rank-badge-podium {
+		position: absolute;
+		top: -8px;
+		left: -10px;
+		font-size: 9px;
 		font-weight: 800;
 		padding: 2px 5px;
 		border-radius: 10px;
 		display: inline-flex;
 		align-items: center;
-		gap: 1px;
-		margin-top: 4px;
+		justify-content: center;
 		line-height: 1;
+		letter-spacing: -0.3px;
+		min-width: 22px;
+		z-index: 10;
 	}
 
-	.rank-change-podium.up {
-		color: #10b981;
-		background: rgba(209, 250, 229, 0.9);
+	.rank-badge-up {
+		color: #065f46;
+		background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+		border: 1px solid #6ee7b7;
+		box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
 	}
 
-	.rank-change-podium.down {
-		color: #ef4444;
-		background: rgba(254, 226, 226, 0.9);
+	.rank-badge-down {
+		color: #991b1b;
+		background: linear-gradient(135deg, #fee2e2, #fecaca);
+		border: 1px solid #fca5a5;
+		box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+	}
+
+	.rank-badge-same {
+		color: #9ca3af;
+		background: #f3f4f6;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 </style>

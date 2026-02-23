@@ -29,16 +29,51 @@
 	onMount(() => {
 		selectedLevelId = currentUserLevelId;
 	});
+	function getSnapshotKey(levelId) {
+		return `leaderboard_snapshot_${levelId}`;
+	}
+	function getPrevSnapshotKey(levelId) {
+		return `leaderboard_snapshot_prev_${levelId}`;
+	}
+	function readSnapshot(levelId) {
+		try {
+			const saved = localStorage.getItem(getSnapshotKey(levelId));
+			return saved ? JSON.parse(saved) : {};
+		} catch {
+			return {};
+		}
+	}
+	function saveSnapshot(levelId, users) {
+		try {
+			const current = localStorage.getItem(getSnapshotKey(levelId));
+			if (current) {
+				localStorage.setItem(getPrevSnapshotKey(levelId), current);
+			}
+			const snapshot = {};
+			users.forEach((user, index) => {
+				snapshot[user.id_deportista] = index + 1;
+			});
+			localStorage.setItem(getSnapshotKey(levelId), JSON.stringify(snapshot));
+		} catch {
+			// ignore storage errors
+		}
+	}
 	$: {
 		if (selectedLevelId && provider) {
 			isLoadingLeaderboard = true;
+			const levelIdAtLoad = selectedLevelId;
 			provider.getGamificationData
-				.getLeaderboardData(selectedLevelId)
+				.getLeaderboardData(levelIdAtLoad)
 				.then((newUsers) => {
-					leaderboardData = newUsers;
+					const previousRanks = readSnapshot(levelIdAtLoad);
+					saveSnapshot(levelIdAtLoad, newUsers);
+					leaderboardData = newUsers.map((user, index) => ({
+						...user,
+						posicion_anterior: previousRanks[user.id_deportista] ?? null
+					}));
 				})
 				.catch((err) => {
-					console.error('Failed to load leaderboard for level ' + selectedLevelId, err);
+					console.error('Failed to load leaderboard for level ' + levelIdAtLoad, err);
 					leaderboardData = []; // Clear data on error
 				})
 				.finally(() => {
@@ -214,17 +249,19 @@
 					<ul class="leaderboard-list">
 						{#each chaseUsers as user, i (user.id_deportista || i)}
 							<li class="rank-item" class:current-user={user.id_deportista == currentUserID}>
-								<div class="rank-pos-container">
-									<span class="rank-pos">{user.rank}</span>
-									{#if user.posicion_anterior && user.posicion_anterior !== user.rank}
-										{@const cambio = user.posicion_anterior - user.rank}
-										{#if cambio > 0}
-											<span class="rank-change up" title="Subió {cambio} posiciones">↑{cambio}</span>
-										{:else if cambio < 0}
-											<span class="rank-change down" title="Bajó {Math.abs(cambio)} posiciones">↓{Math.abs(cambio)}</span>
-										{/if}
-									{/if}
-								</div>
+							{#if user.posicion_anterior !== null}
+								{@const cambio = user.posicion_anterior - user.rank}
+								{#if cambio > 0}
+									<span class="rank-badge rank-badge-up">▲{cambio}</span>
+								{:else if cambio < 0}
+									<span class="rank-badge rank-badge-down">▼{Math.abs(cambio)}</span>
+								{:else}
+									<span class="rank-badge rank-badge-same">—</span>
+								{/if}
+							{/if}
+							<div class="rank-pos-container">
+								<span class="rank-pos">{user.rank}</span>
+							</div>
 								<img src={getAvatarUrl(user)} alt="Avatar" class="rank-avatar" />
 								<div class="rank-info">
 									<span class="rank-name">
@@ -419,6 +456,7 @@
 			margin: 0;
 		}
 		.rank-item {
+			position: relative;
 			display: flex;
 			align-items: center;
 			background: white;
@@ -428,6 +466,7 @@
 			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
 			border: 1px solid transparent;
 			transition: all 0.2s ease;
+			overflow: visible;
 		}
 		.rank-item:hover {
 			transform: translateY(-2px);
@@ -440,10 +479,9 @@
 		}
 		.rank-pos-container {
 			display: flex;
-			flex-direction: column;
 			align-items: center;
-			gap: 2px;
-			width: 40px;
+			justify-content: center;
+			min-width: 32px;
 			margin-right: 10px;
 		}
 		.rank-pos {
@@ -451,24 +489,41 @@
 			font-weight: 800;
 			color: #7f8c8d;
 			text-align: center;
-		}
-		.rank-change {
-			font-size: 10px;
-			font-weight: 700;
-			padding: 1px 4px;
-			border-radius: 8px;
-			display: inline-flex;
-			align-items: center;
-			gap: 1px;
 			line-height: 1;
 		}
-		.rank-change.up {
-			color: #10b981;
-			background: #d1fae5;
+		.rank-badge {
+			position: absolute;
+			top: -8px;
+			left: -6px;
+			font-size: 9px;
+			font-weight: 800;
+			padding: 2px 5px;
+			border-radius: 10px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			line-height: 1;
+			letter-spacing: -0.3px;
+			min-width: 22px;
+			z-index: 1;
 		}
-		.rank-change.down {
-			color: #ef4444;
-			background: #fee2e2;
+		.rank-badge-up {
+			color: #065f46;
+			background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+			border: 1px solid #6ee7b7;
+			box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+		}
+		.rank-badge-down {
+			color: #991b1b;
+			background: linear-gradient(135deg, #fee2e2, #fecaca);
+			border: 1px solid #fca5a5;
+			box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+		}
+		.rank-badge-same {
+			color: #9ca3af;
+			background: #f3f4f6;
+			border: 1px solid #e5e7eb;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 		}
 		.rank-avatar {
 			width: 44px;
