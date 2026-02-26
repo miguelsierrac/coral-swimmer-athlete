@@ -5,7 +5,8 @@
 	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { onMount, setContext } from 'svelte';
-	import { athlete, lastSync, token, lastMeasurement } from '$lib/stores.js';
+	import { athlete, lastSync, token, lastMeasurement, notifications } from '$lib/stores.js';
+	import { get } from 'svelte/store';
 	import { getToken, onMessage } from 'firebase/messaging';
 	import { messaging } from '$lib/infrastructure/firebase.js';
 	import { SvelteToast, toast } from '@zerodevx/svelte-toast';
@@ -16,6 +17,9 @@
 
 
 	const provider = Provider;
+
+	const MAX_NOTIFICATIONS = 50;
+	const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 	setContext('provider', provider);
 
@@ -117,6 +121,20 @@
 			icon: '/logo_512.png'
 		};
 
+		// Add to persistent notification history (max 50, max age 30 days)
+		const cutoff = Date.now() - TTL_MS;
+		const updated = [
+			{
+				id: Date.now() + Math.random(),
+				title: notificationTitle,
+				body: notificationOptions.body,
+				timestamp: Date.now(),
+				read: false
+			},
+			...get(notifications).filter((n) => n.timestamp > cutoff)
+		].slice(0, MAX_NOTIFICATIONS);
+		notifications.set(updated);
+
 		if (!fromBackground) {
 			try {
 				var notification = new Notification(notificationTitle, notificationOptions);
@@ -135,37 +153,51 @@
 	}
 
 	onMount(async () => {
+		// Purge expired notifications on startup
+		const cutoff = Date.now() - TTL_MS;
+		notifications.set(get(notifications).filter((n) => n.timestamp > cutoff));
+
 		retrieveNotifications();
-		if (!isNotificationSupported()) {
-			console.log('Notifications are not supported in this browser.');
-			return;
-		}
-		if (Notification.permission === 'granted') {
-			console.log('Notification permission already granted.');
-			setupNotifications();
-			return;
-		}
-		toast.push({
-			component: {
-				src: PushNotificationComponent,
-				props: {
-					title: 'Aceptar notificaciones',
-					content: '¿Deseas recibir notificaciones de Coral Swimmer?',
-					confirmText: 'ACEPTAR',
-					cancelText: 'CANCELAR',
-					onConfirm: async () => {
-						await requestNotificationPermission();
-						setupNotifications();
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === 'visible') {
+				retrieveNotifications();
+			}
+		};
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+
+		if (isNotificationSupported()) {
+			if (Notification.permission === 'granted') {
+				console.log('Notification permission already granted.');
+				setupNotifications();
+			} else {
+				toast.push({
+					component: {
+						src: PushNotificationComponent,
+						props: {
+							title: 'Aceptar notificaciones',
+							content: '¿Deseas recibir notificaciones de Coral Swimmer?',
+							confirmText: 'ACEPTAR',
+							cancelText: 'CANCELAR',
+							onConfirm: async () => {
+								await requestNotificationPermission();
+								setupNotifications();
+							},
+							onCancel: () => {
+								console.log('User accepted notifications.');
+							}
+						},
+						sendIdTo: 'toastId' // send toast id to `toastId` prop
 					},
-					onCancel: () => {
-						console.log('User accepted notifications.');
-					}
-				},
-				sendIdTo: 'toastId' // send toast id to `toastId` prop
-			},
-			dismissable: false,
-			initial: 0
-		});
+					dismissable: false,
+					initial: 0
+				});
+			}
+		} else {
+			console.log('Notifications are not supported in this browser.');
+		}
+
+		return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
 	});
 </script>
 

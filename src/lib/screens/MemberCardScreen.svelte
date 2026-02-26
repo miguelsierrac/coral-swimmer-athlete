@@ -2,6 +2,8 @@
 	import { toast } from '@zerodevx/svelte-toast';
 	import TechnicalSheet from '$lib/screens/TechnicalSheet.svelte';
 	import ProductTour from '$lib/components/ProductTour.svelte';
+	import NotificationsDrawer from '$lib/components/NotificationsDrawer.svelte';
+	import { notifications } from '$lib/stores.js';
 	import { tick } from 'svelte';
 
 	export let athlete;
@@ -14,10 +16,33 @@
 	export let currentUserID;
 
 	let isFlipped = false;
+	let showNotifDrawer = false;
 	let tourInstance;
 	let isTransitioning = false;
 	let tourInitialized = false;
 	let hasViewedAchievements = false; // Track if user has viewed the back
+
+	$: unreadCount = $notifications.filter((n) => !n.read).length;
+
+	function openNotifDrawer() {
+		showNotifDrawer = true;
+	}
+
+	function closeNotifDrawer() {
+		showNotifDrawer = false;
+	}
+
+	function markAllRead() {
+		notifications.set($notifications.map((n) => ({ ...n, read: true })));
+	}
+
+	function deleteNotification(id) {
+		notifications.set($notifications.filter((n) => n.id !== id));
+	}
+
+	function clearAllNotifications() {
+		notifications.set([]);
+	}
 
 	// Puntajes guardados localmente para detectar cambios
 	function readStoredScores() {
@@ -264,6 +289,32 @@
 
 				<!-- CARA FRONTAL -->
 				<div class="card-face card-front">
+					<!-- Botón campana: historial de notificaciones -->
+					<button
+						class="bell-btn"
+						class:has-unread={unreadCount > 0}
+						on:click={openNotifDrawer}
+						title={unreadCount > 0 ? `${unreadCount} notificacion${unreadCount === 1 ? '' : 'es'} nueva${unreadCount === 1 ? '' : 's'}` : 'Ver notificaciones'}
+					>
+						{#if unreadCount > 0}
+							<span class="bell-unread-dot">{unreadCount > 9 ? '9+' : unreadCount}</span>
+						{/if}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+							<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+						</svg>
+					</button>
+
 					{#if athlete.tier !== 'standard'}
 						<button 
 							class="flip-btn" 
@@ -591,6 +642,15 @@
 			</div>
 		</div>
 	</div>
+
+	<NotificationsDrawer
+		open={showNotifDrawer}
+		notificationList={$notifications}
+		onClose={closeNotifDrawer}
+		onMarkAllRead={markAllRead}
+		onDelete={deleteNotification}
+		onClearAll={clearAllNotifications}
+	/>
 {/if}
 
 <style>
@@ -667,6 +727,67 @@
 		background-color: #e2e8f0;
 		border-radius: 24px;
 		border: 1px solid #cbd5e1;
+	}
+
+	/* Botón campana – espejo del flip-btn, en la esquina opuesta */
+	.bell-btn {
+		position: absolute;
+		top: 20px;
+		left: 20px;
+		background: var(--bg-icon);
+		border: none;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		cursor: pointer;
+		font-size: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 20;
+		color: var(--text-muted);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		transition: transform 0.2s, box-shadow 0.2s;
+		-webkit-backface-visibility: hidden;
+		backface-visibility: hidden;
+	}
+
+	.bell-btn:hover {
+		transform: scale(1.08);
+		box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+	}
+
+	.bell-btn.has-unread {
+		background: linear-gradient(135deg, #4285f4 0%, #3b82f6 100%);
+		color: white;
+		box-shadow: 0 4px 14px rgba(66, 133, 244, 0.45);
+		animation: pulse-attention 2s infinite;
+	}
+
+	.bell-unread-dot {
+		position: absolute;
+		top: -4px;
+		right: -4px;
+		min-width: 16px;
+		height: 16px;
+		background: #ff4444;
+		border: 2px solid white;
+		border-radius: 8px;
+		font-size: 9px;
+		font-weight: 700;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 3px;
+		line-height: 1;
+	}
+
+	/* Hide bell btn when card is flipped */
+	.card-inner.is-flipped .card-front .bell-btn {
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0s 0s, transform 0.2s;
 	}
 
 	.flip-btn {
