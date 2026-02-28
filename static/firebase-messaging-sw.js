@@ -25,6 +25,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
 	console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
+	// Save to IDB as fallback (for when the page is fully closed)
 	const dbPromise = indexedDB.open('coral-swimmer-athlete', 1);
 
 	dbPromise.onsuccess = (event) => {
@@ -37,6 +38,15 @@ messaging.onBackgroundMessage((payload) => {
 			console.error('Error adding notification to DB:', error);
 		}
 	};
+
+	// Also broadcast directly to any open page (more reliable than visibilitychange + IDB polling)
+	try {
+		const channel = new BroadcastChannel('coral-notifications');
+		channel.postMessage(payload);
+		channel.close();
+	} catch (e) {
+		console.warn('BroadcastChannel not available:', e);
+	}
 
 	if (payload.notification) {
 		console.log('Notification payload received:', payload.notification);

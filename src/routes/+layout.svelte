@@ -122,6 +122,13 @@
 		};
 
 		// Add to persistent notification history (max 50, max age 30 days)
+		// Deduplicate: skip if same title+body arrived within the last 10 seconds
+		const existing = get(notifications);
+		const isDuplicate = existing.some(
+			(n) => n.title === notificationTitle && n.body === notificationOptions.body && Date.now() - n.timestamp < 10_000
+		);
+		if (isDuplicate) return;
+
 		const cutoff = Date.now() - TTL_MS;
 		const updated = [
 			{
@@ -166,6 +173,18 @@
 		};
 		document.addEventListener('visibilitychange', handleVisibilityChange);
 
+		// BroadcastChannel: receive notifications pushed by the SW while page is in background
+		// More reliable than visibilitychange + IDB polling
+		let notifChannel = null;
+		try {
+			notifChannel = new BroadcastChannel('coral-notifications');
+			notifChannel.onmessage = (event) => {
+				showNotification(event.data, true);
+			};
+		} catch (e) {
+			console.warn('BroadcastChannel not available:', e);
+		}
+
 		if (isNotificationSupported()) {
 			if (Notification.permission === 'granted') {
 				console.log('Notification permission already granted.');
@@ -197,7 +216,10 @@
 			console.log('Notifications are not supported in this browser.');
 		}
 
-		return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+		return () => {
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			notifChannel?.close();
+		};
 	});
 </script>
 
