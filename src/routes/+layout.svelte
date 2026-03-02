@@ -95,9 +95,8 @@
 	}
 
 	async function retrieveNotifications() {
-		const dbPromise = await openDB('coral-swimmer-athlete', 1, {
+		const db = await openDB('coral-swimmer-athlete', 1, {
 			upgrade(db) {
-				// Creates an object store:
 				db.createObjectStore('notifications', {
 					keyPath: 'id',
 					autoIncrement: true
@@ -105,13 +104,16 @@
 			}
 		});
 
-		const value = await dbPromise.getAll('notifications');
+		const items = await db.getAll('notifications');
+		await db.clear('notifications');
 
-		value.forEach((item) => {
-			showNotification(item, true);
+		items.forEach((item) => {
+			// Adapt the minimal IDB format { title, body } to what showNotification expects
+			const payload = item.notification
+				? item
+				: { notification: { title: item.title, body: item.body } };
+			showNotification(payload, true);
 		});
-
-		dbPromise.clear('notifications');
 	}
 
 	function showNotification(payload, fromBackground = false) {
@@ -173,8 +175,15 @@
 		};
 		document.addEventListener('visibilitychange', handleVisibilityChange);
 
-		// BroadcastChannel: receive notifications pushed by the SW while page is in background
-		// More reliable than visibilitychange + IDB polling
+		// Listen for messages posted by the SW via clients.postMessage() — works on iOS
+		const handleSwMessage = (event) => {
+			if (event.data?.type === 'PUSH_NOTIFICATION') {
+				showNotification(event.data.payload, true);
+			}
+		};
+		navigator.serviceWorker.addEventListener('message', handleSwMessage);
+
+		// BroadcastChannel as secondary channel for browsers that support it
 		let notifChannel = null;
 		try {
 			notifChannel = new BroadcastChannel('coral-notifications');
@@ -218,6 +227,7 @@
 
 		return () => {
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			navigator.serviceWorker.removeEventListener('message', handleSwMessage);
 			notifChannel?.close();
 		};
 	});

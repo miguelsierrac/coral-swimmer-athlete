@@ -22,48 +22,64 @@ firebase.initializeApp({
 // messages.
 const messaging = firebase.messaging();
 
+// Wraps the IDB write in a Promise so the SW stays alive until it completes.
+function saveToIDB(entry) {
+	return new Promise((resolve, reject) => {
+		const dbOpen = indexedDB.open('coral-swimmer-athlete', 1);
+
+		dbOpen.onupgradeneeded = (event) => {
+			const db = event.target.result;
+			if (!db.objectStoreNames.contains('notifications')) {
+				db.createObjectStore('notifications', { keyPath: 'id', autoIncrement: true });
+			}
+		};
+
+		dbOpen.onerror = (event) => reject(event.target.error);
+
+		dbOpen.onsuccess = (event) => {
+			const db = event.target.result;
+			const tx = db.transaction('notifications', 'readwrite');
+			tx.objectStore('notifications').add(entry);
+			tx.oncomplete = resolve;
+			tx.onerror = (e) => reject(e.target.error);
+		};
+	});
+}
+
 messaging.onBackgroundMessage((payload) => {
 	console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-	// Save to IDB as fallback (for when the page is fully closed)
-	const dbPromise = indexedDB.open('coral-swimmer-athlete', 1);
+	// Extract title/body regardless of whether they come in payload.notification or payload.data
+	const title = payload.notification?.title ?? payload.data?.title ?? '';
+	const body  = payload.notification?.body  ?? payload.data?.body  ?? '';
 
-	dbPromise.onsuccess = (event) => {
-		try {
-			const db = event.target.result;
-			const transaction = db.transaction('notifications', 'readwrite');
-			const store = transaction.objectStore('notifications');
-			store.add(payload);
-		} catch (error) {
-			console.error('Error adding notification to DB:', error);
+	// Store a minimal plain object — avoids structured-clone errors with Firebase objects
+	const entry = { title, body, timestamp: Date.now() };
+
+	// Return a Promise so Firebase keeps the SW alive until all async work is done
+	return Promise.all([
+		// 1. Persist to IDB (read when the app opens / comes back to foreground)
+		saveToIDB(entry).catch((e) => console.error('IDB write failed:', e)),
+
+		// 2. Post directly to any open window (works on iOS; no BroadcastChannel needed)
+		self.clients
+			.matchAll({ includeUncontrolled: true, type: 'window' })
+			.then((clients) => {
+				clients.forEach((client) =>
+					client.postMessage({
+						type: 'PUSH_NOTIFICATION',
+						payload: { notification: { title, body } }
+					})
+				);
+			})
+	]).then(() => {
+		// 3. Show system notification only for data-only messages
+		//    (notification messages are shown automatically by the browser)
+		if (!payload.notification && title) {
+			return self.registration.showNotification(title, {
+				body,
+				icon: '/coral-swimmer-athlete/logo_512.png'
+			});
 		}
-	};
-
-	// Also broadcast directly to any open page (more reliable than visibilitychange + IDB polling)
-	try {
-		const channel = new BroadcastChannel('coral-notifications');
-		channel.postMessage(payload);
-		channel.close();
-	} catch (e) {
-		console.warn('BroadcastChannel not available:', e);
-	}
-
-	if (payload.notification) {
-		console.log('Notification payload received:', payload.notification);
-		return;
-	}
-
-	if (!payload.data || !payload.data.title || !payload.data.body) {
-		console.error('Invalid payload data:', payload.data);
-		return;
-	}
-
-	// Customize notification here
-	const notificationTitle = payload.data.title;
-	const notificationOptions = {
-		body: payload.data.body,
-		icon: '/coral-swimmer-athlete/logo_512.png'
-	};
-
-	self.registration.showNotification(notificationTitle, notificationOptions);
+	});
 });
