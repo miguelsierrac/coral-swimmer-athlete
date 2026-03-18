@@ -23,6 +23,50 @@
 		{ top: 23, left: 80, rotate:  -4 },
 	];
 
+	// ── Card customisation (localStorage) ───────────────────────
+	function customKey(id) { return `card_custom_${id}`; }
+
+	function loadCustom(athleteId) {
+		try {
+			const raw = localStorage.getItem(customKey(athleteId));
+			return raw ? JSON.parse(raw) : null;
+		} catch { return null; }
+	}
+
+	function saveCustom(athleteId, data) {
+		try { localStorage.setItem(customKey(athleteId), JSON.stringify(data)); } catch {}
+	}
+
+	// Edit-mode state
+	let isEditMode = false;
+
+	// active sticker IDs chosen by the user (null = not yet initialised from storage)
+	let activeStickerIds = null;
+
+	// Initialise once athlete + completedBadges are ready
+	$: if (athlete?.id && completedBadges && activeStickerIds === null) {
+		const saved = loadCustom(athlete.id);
+		if (saved?.stickers) {
+			activeStickerIds = saved.stickers;
+		} else {
+			// First time: all earned stickers active by default
+			activeStickerIds = allEarnedStickerFiles;
+		}
+	}
+
+	function toggleEditMode() {
+		isEditMode = !isEditMode;
+	}
+
+	function toggleSticker(fileId) {
+		if (activeStickerIds.includes(fileId)) {
+			activeStickerIds = activeStickerIds.filter(id => id !== fileId);
+		} else {
+			activeStickerIds = [...activeStickerIds, fileId];
+		}
+		saveCustom(athlete.id, { stickers: activeStickerIds });
+	}
+
 	export let athlete;
 	export let onLogOut;
 	export let badges = [];
@@ -145,23 +189,25 @@
 	$: completedBadges = badges.filter(b => b.progress !== null && b.progress !== undefined);
 	$: hasPendingRewards = completedBadges.length > 0;
 
-	// Derive earned stickers: completed badges with a sticker reward
-	$: earnedStickers = (() => {
+	// All unique sticker file IDs the user has earned
+	$: allEarnedStickerFiles = (() => {
 		const seen = new Set();
 		const result = [];
 		for (const badge of completedBadges) {
 			const rewardId = badge.meta_game?.reward?.id;
 			if (!rewardId || badge.meta_game?.reward?.tipo !== 'sticker') continue;
-			// Filename = reward ID without the sticker_ prefix
 			const file = rewardId.replace(/^sticker_/, '');
 			if (seen.has(file)) continue;
 			seen.add(file);
-			const slot = STICKER_SLOTS[result.length % STICKER_SLOTS.length];
-			result.push({ id: file, ...slot });
-			if (result.length >= STICKER_SLOTS.length) break;
+			result.push(file);
 		}
 		return result;
 	})();
+
+	// Stickers to render on the card = active ones, positioned in STICKER_SLOTS
+	$: displayedStickers = (activeStickerIds ?? allEarnedStickerFiles)
+		.slice(0, STICKER_SLOTS.length)
+		.map((fileId, i) => ({ id: fileId, ...STICKER_SLOTS[i] }));
 	$: recentAchievements = completedBadges.filter(b => {
 		// Opcional: si tienes timestamp de cuándo se completó, puedes filtrar por recientes
 		// Por ahora, cualquier badge completado cuenta como "reciente"
@@ -439,8 +485,22 @@
 								<path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
 							</svg>
 						</button>
-					{/if}
 
+					<!-- Botón editar carnet -->
+					{#if allEarnedStickerFiles.length > 0}
+						<button
+							class="edit-btn"
+							class:edit-btn-active={isEditMode}
+							on:click={toggleEditMode}
+							title="Personalizar carnet"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+								<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+							</svg>
+						</button>
+					{/if}
+				{/if}
 					<div class="nc-root" style="--skin-accent:{skin.accent};">
 						<!-- ── CLUB HEADER ── -->
 						<div class="nc-header" class:nc-header-dark={skin.isDark}>
@@ -520,8 +580,46 @@
 
 					</div>
 					<!-- Stickers ganados superpuestos sobre la cara frontal -->
-					{#if earnedStickers.length > 0}
-						<CardStickers stickers={earnedStickers} />
+					{#if displayedStickers.length > 0}
+						<CardStickers stickers={displayedStickers} {isEditMode} />
+					{/if}
+
+					<!-- Panel de edición -->
+					{#if isEditMode}
+						<!-- Backdrop para cerrar -->
+						<button class="edit-backdrop" on:click={toggleEditMode} aria-label="Cerrar editor" />
+
+						<div class="edit-panel">
+							<div class="edit-panel-handle"></div>
+							<p class="edit-panel-title">✏️ Personalizar Carnet</p>
+
+							<section class="edit-section">
+								<h4 class="edit-section-title">🏷️ Mis Stickers</h4>
+								<div class="sticker-grid">
+									{#each allEarnedStickerFiles as fileId}
+										{@const active = (activeStickerIds ?? []).includes(fileId)}
+										{@const atLimit = (activeStickerIds ?? []).length >= STICKER_SLOTS.length && !active}
+										<button
+											class="sticker-thumb"
+											class:sticker-thumb-active={active}
+											class:sticker-thumb-limit={atLimit}
+											on:click={() => !atLimit && toggleSticker(fileId)}
+											title={active ? 'Quitar sticker' : atLimit ? `Máximo ${STICKER_SLOTS.length} stickers` : 'Agregar sticker'}
+										>
+											<img
+												src="/stickers/{fileId}.svg"
+												alt={fileId}
+												on:error={(e) => { e.currentTarget.style.display = 'none'; }}
+											/>
+											{#if active}
+												<span class="sticker-check">✓</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+								<p class="edit-hint">{(activeStickerIds ?? []).length}/{STICKER_SLOTS.length} activos</p>
+							</section>
+						</div>
 					{/if}
 					<!-- Banner Teaser -->
 					{#if hasNewAchievements && athlete.tier !== 'standard'}
@@ -1042,6 +1140,134 @@
 		opacity: 0;
 		pointer-events: none;
 		transition: opacity 0s 0s, transform 0.2s;
+	}
+
+	/* Edit button */
+	.edit-btn {
+		position: absolute;
+		top: 68px;
+		right: 20px;
+		background: var(--bg-icon);
+		border: none;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 20;
+		color: var(--text-muted);
+		box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+		transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+		-webkit-backface-visibility: hidden;
+		backface-visibility: hidden;
+	}
+	.edit-btn:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+	.edit-btn-active {
+		background: var(--primary-blue);
+		color: white;
+		box-shadow: 0 4px 14px rgba(66,133,244,0.45);
+	}
+	.card-inner.is-flipped .card-front .edit-btn { opacity: 0; pointer-events: none; }
+
+	/* Edit panel backdrop */
+	.edit-backdrop {
+		position: absolute;
+		inset: 0;
+		z-index: 29;
+		background: rgba(0,0,0,0.25);
+		border: none;
+		cursor: pointer;
+		border-radius: 24px;
+	}
+
+	/* Edit bottom sheet */
+	.edit-panel {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 30;
+		background: white;
+		border-radius: 20px 20px 0 0;
+		padding: 8px 16px 24px;
+		box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+		animation: slide-up 0.25s cubic-bezier(0.32,0.72,0,1) both;
+	}
+	@keyframes slide-up {
+		from { transform: translateY(100%); }
+		to   { transform: translateY(0); }
+	}
+	.edit-panel-handle {
+		width: 36px;
+		height: 4px;
+		background: #e2e8f0;
+		border-radius: 2px;
+		margin: 0 auto 10px;
+	}
+	.edit-panel-title {
+		font-size: 14px;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 12px;
+		text-align: center;
+	}
+	.edit-section { margin-bottom: 4px; }
+	.edit-section-title {
+		font-size: 12px;
+		font-weight: 600;
+		color: #64748b;
+		margin: 0 0 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.sticker-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.sticker-thumb {
+		position: relative;
+		width: 52px;
+		height: 52px;
+		border-radius: 12px;
+		border: 2px solid #e2e8f0;
+		background: #f8fafc;
+		cursor: pointer;
+		padding: 4px;
+		transition: border-color 0.15s, transform 0.15s, opacity 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.sticker-thumb img { width: 100%; height: 100%; object-fit: contain; }
+	.sticker-thumb-active {
+		border-color: var(--primary-blue);
+		background: #eff6ff;
+		transform: scale(1.06);
+	}
+	.sticker-thumb-limit { opacity: 0.38; cursor: not-allowed; }
+	.sticker-check {
+		position: absolute;
+		bottom: -5px;
+		right: -5px;
+		width: 16px;
+		height: 16px;
+		background: var(--primary-blue);
+		color: white;
+		border-radius: 50%;
+		font-size: 9px;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1.5px solid white;
+	}
+	.edit-hint {
+		font-size: 11px;
+		color: #94a3b8;
+		margin: 6px 0 0;
 	}
 
 	.flip-btn {
