@@ -108,16 +108,18 @@
 		const items = await db.getAll('notifications');
 		await db.clear('notifications');
 
-		items.forEach((item) => {
+		items.forEach((item, index) => {
 			// Adapt the minimal IDB format { title, body } to what showNotification expects
 			const payload = item.notification
 				? item
 				: { notification: { title: item.title, body: item.body } };
-			showNotification(payload, 'app_open');
+			// Only show a toast for the most recent notification to avoid an avalanche
+			// Pass the original SW timestamp so the notification reflects when it was received
+			showNotification(payload, 'app_open', index === items.length - 1, item.timestamp ?? null);
 		});
 	}
 
-	function showNotification(payload, source = 'foreground') {
+	function showNotification(payload, source = 'foreground', showToast = true, receivedAt = null) {
 		const notificationTitle = payload.notification.title;
 		const notificationOptions = {
 			body: payload.notification.body,
@@ -135,12 +137,13 @@
 		trackNotificationReceived(notificationTitle, source);
 
 		const cutoff = Date.now() - TTL_MS;
+		const ts = receivedAt ?? Date.now();
 		const updated = [
 			{
-				id: Date.now() + Math.random(),
+				id: ts + Math.random(),
 				title: notificationTitle,
 				body: notificationOptions.body,
-				timestamp: Date.now(),
+				timestamp: ts,
 				read: false
 			},
 			...get(notifications).filter((n) => n.timestamp > cutoff)
@@ -159,9 +162,11 @@
 				}
 			}
 
-		toast.push('<strong>' + notificationTitle + '</strong><br>' + notificationOptions.body, {
-			initial: 0
-		});
+		if (showToast) {
+			toast.push('<strong>' + notificationTitle + '</strong><br>' + notificationOptions.body, {
+				initial: 0
+			});
+		}
 	}
 
 	onMount(async () => {
