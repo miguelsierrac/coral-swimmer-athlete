@@ -113,18 +113,13 @@
 	$: skin = customSkinId ? (getSkinById(customSkinId) ?? levelSkin) : levelSkin;
 	$: activeFrameClass = customFrameId ? (getFrameById(customFrameId)?.frameClass ?? '') : '';
 
-	// Build radar stats by accumulating radar_stats from every completed objective across all levels
+	// Build radar stats by accumulating radar_stats from every completed objective
+	// (current level real progress + all previous levels assumed fully earned)
 	$: radarStats = (() => {
-		if (!gamificationProgress?.progreso_objetivos || !gamificationLevels?.length) return null;
-		const completedIds = Object.keys(gamificationProgress.progreso_objetivos).filter(
-			id => gamificationProgress.progreso_objetivos[id]
-		);
-		if (!completedIds.length) return null;
-		const allObjectives = gamificationLevels.flatMap(l => l.objetivos ?? []);
+		if (!allCompletedBadges?.length) return null;
 		const acc = {};
-		for (const id of completedIds) {
-			const obj = allObjectives.find(o => o.id === id);
-			const stats = obj?.meta_game?.radar_stats;
+		for (const badge of allCompletedBadges) {
+			const stats = badge?.meta_game?.radar_stats;
 			if (!stats) continue;
 			for (const [key, val] of Object.entries(stats)) {
 				acc[key] = (acc[key] ?? 0) + val;
@@ -223,11 +218,27 @@
 	$: completedBadges = badges.filter(b => b.progress !== null && b.progress !== undefined);
 	$: hasPendingRewards = completedBadges.length > 0;
 
+	// Completed badges expanded with all previous-level objectives (assumed fully earned)
+	$: allCompletedBadges = (() => {
+		const result = [...completedBadges];
+		if (!level || !gamificationLevels?.length) return result;
+		let prevLevelId = level.nivel_anterior;
+		while (prevLevelId !== null && prevLevelId !== undefined) {
+			const prevLevel = gamificationLevels.find(l => l.id === prevLevelId);
+			if (!prevLevel) break;
+			for (const obj of prevLevel.objetivos ?? []) {
+				result.push({ ...obj, progress: 'oro' });
+			}
+			prevLevelId = prevLevel.nivel_anterior;
+		}
+		return result;
+	})();
+
 	// All unique sticker file IDs the user has earned
 	$: allEarnedStickerFiles = (() => {
 		const seen = new Set();
 		const result = [];
-		for (const badge of completedBadges) {
+		for (const badge of allCompletedBadges) {
 			const rewardId = badge.meta_game?.reward?.id;
 			if (!rewardId || badge.meta_game?.reward?.tipo !== 'sticker') continue;
 			const file = rewardId.replace(/^sticker_/, '');
@@ -241,7 +252,7 @@
 	// All unique frame IDs the user has earned
 	$: allEarnedFrameIds = (() => {
 		const result = [];
-		for (const badge of completedBadges) {
+		for (const badge of allCompletedBadges) {
 			const r = badge.meta_game?.reward;
 			if (r?.tipo === 'borde' && !result.includes(r.id)) result.push(r.id);
 		}
@@ -251,7 +262,7 @@
 	// All unique skin IDs the user has earned
 	$: allEarnedSkinIds = (() => {
 		const result = [];
-		for (const badge of completedBadges) {
+		for (const badge of allCompletedBadges) {
 			const r = badge.meta_game?.reward;
 			if (r?.tipo === 'fondo' && !result.includes(r.id)) result.push(r.id);
 		}

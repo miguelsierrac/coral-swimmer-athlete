@@ -67,7 +67,7 @@
 						gamificationLevels.find((l) => l.id === userGamificationProgress.nivel_actual_id) ||
 						null;
 
-					// Derive `badges` from the objectives of the current level
+					// Derive `badges` from the objectives of the current level only (used by TechnicalSheet)
 					if (level) {
 						badges = level.objetivos.map((obj) => ({
 							...obj,
