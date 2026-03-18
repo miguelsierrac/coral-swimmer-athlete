@@ -4,12 +4,17 @@
 	import ProductTour from '$lib/components/ProductTour.svelte';
 	import NotificationsDrawer from '$lib/components/NotificationsDrawer.svelte';
 	import UnlockPopup from '$lib/components/UnlockPopup.svelte';
+	import WhatsNewPopup from '$lib/components/WhatsNewPopup.svelte';
 	import { notifications } from '$lib/stores.js';
 	import { tick } from 'svelte';
 	import {
 		trackNotificationDrawerOpened,
 		trackNotificationDismissed,
-		trackNotificationClearedAll
+		trackNotificationClearedAll,
+		trackCardEditMode,
+		trackStickerToggled,
+		trackSkinSelected,
+		trackFrameSelected
 	} from '$lib/infrastructure/AnalyticsService.js';
 	import { getCardSkin, getSkinById, getAllSkins, getFrameById, getAllFrames } from '$lib/utils/cardSkin.js';
 	import CardStickers from '$lib/components/CardStickers.svelte';
@@ -73,6 +78,7 @@
 
 	function toggleEditMode() {
 		isEditMode = !isEditMode;
+		trackCardEditMode(isEditMode);
 	}
 
 	function toggleSticker(fileId) {
@@ -81,6 +87,7 @@
 		} else {
 			activeStickerIds = [...activeStickerIds, fileId];
 		}
+		trackStickerToggled(fileId, activeStickerIds.includes(fileId));
 		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
@@ -91,11 +98,13 @@
 
 	function selectSkin(skinId) {
 		customSkinId = skinId === 'default' ? null : skinId;
+		trackSkinSelected(customSkinId);
 		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
 	function selectFrame(frameId) {
 		customFrameId = frameId === 'none' ? null : frameId;
+		trackFrameSelected(customFrameId);
 		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
@@ -139,6 +148,17 @@
 	let showUnlockPopup = false;
 	let currentUnlock = null; // { msg, key }
 	let unlockQueue = [];
+
+	// What's New popup
+	const WHATS_NEW_KEY = 'whats_new_rewards_v1_seen';
+	let showWhatsNew = false;
+	let whatsNewChecked = false;
+	$: if (athlete && athlete.tier !== 'standard' && !whatsNewChecked) {
+		whatsNewChecked = true;
+		try {
+			if (!localStorage.getItem(WHATS_NEW_KEY)) showWhatsNew = true;
+		} catch {}
+	}
 
 	$: {
 		const unseen = pendingUnlockMessages.filter(u => {
@@ -837,6 +857,11 @@
 		levelIcon={level?.icono ?? '🏆'}
 		levelName={level?.nombre ?? ''}
 		on:dismiss={dismissUnlockPopup}
+	/>
+
+	<WhatsNewPopup
+		visible={showWhatsNew}
+		on:close={() => (showWhatsNew = false)}
 	/>
 {/if}
 

@@ -98,3 +98,59 @@ export function trackNotificationClearedAll(count) {
     cleared_count: count
   });
 }
+
+// ── Card customisation analytics ──────────────────────────────
+
+/**
+ * Tracks when the user opens or closes the card edit mode.
+ * @param {boolean} opened - true when entering edit mode, false when leaving.
+ */
+export function trackCardEditMode(opened) {
+  if (!analytics) return;
+  logEvent(analytics, 'card_edit_mode', { opened });
+}
+
+/**
+ * Tracks when the user toggles a sticker on/off in the card editor.
+ * @param {string} stickerId - The sticker file ID.
+ * @param {boolean} active - true = added, false = removed.
+ */
+export function trackStickerToggled(stickerId, active) {
+  if (!analytics) return;
+  logEvent(analytics, 'card_sticker_toggled', { sticker_id: stickerId, active });
+}
+
+/**
+ * Tracks when the user selects a card background skin.
+ * @param {string|null} skinId - The skin ID selected, or null for the default.
+ */
+export function trackSkinSelected(skinId) {
+  if (!analytics) return;
+  logEvent(analytics, 'card_skin_selected', { skin_id: skinId ?? 'default' });
+}
+
+/**
+ * Tracks when the user selects a card frame/border.
+ * @param {string|null} frameId - The frame ID selected, or null for none.
+ */
+export function trackFrameSelected(frameId) {
+  if (!analytics) return;
+  logEvent(analytics, 'card_frame_selected', { frame_id: frameId ?? 'none' });
+}
+
+/**
+ * Tracks when the What's New popup is shown to the user.
+ */
+export function trackWhatsNewShown() {
+  if (!analytics) return;
+  logEvent(analytics, 'whats_new_shown');
+}
+
+/**
+ * Tracks when the user dismisses the What's New popup.
+ * @param {boolean} neverShowAgain - Whether the user checked "don't show again".
+ */
+export function trackWhatsNewDismissed(neverShowAgain) {
+  if (!analytics) return;
+  logEvent(analytics, 'whats_new_dismissed', { never_show_again: neverShowAgain });
+}
