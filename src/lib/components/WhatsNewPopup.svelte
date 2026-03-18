@@ -61,7 +61,7 @@
 			<div class="wn-header">
 				<span class="wn-badge">¡Novedad!</span>
 				<h2 class="wn-title">Personaliza tu Carnet</h2>
-				<p class="wn-subtitle">Nuevas recompensas desbloqueables para hacer único tu carnet de atleta.</p>
+				<p class="wn-subtitle">Nuevas recompensas desbloqueables para hacer único tu carnet de atleta. Toca el ícono <strong style="color:#e2e8f0">✏️</strong> en tu carnet para personalizar.</p>
 			</div>
 
 			<ul class="wn-features">
