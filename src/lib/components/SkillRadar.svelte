@@ -36,9 +36,7 @@
 	$: r = size * 0.34; // max-value radius
 
 	const PLACEHOLDER_KEYS = ['potencia', 'resistencia', 'tecnica', 'apnea', 'fondo'];
-	$: isEmpty = n < 3;
-	// When empty, show 5 placeholder axes all at value 0 (ghost state)
-	$: displayEntries = isEmpty ? PLACEHOLDER_KEYS.map(k => [k, 0]) : entries;
+	$: displayEntries = n > 0 ? entries : PLACEHOLDER_KEYS.map(k => [k, 0]);
 	$: displayN = displayEntries.length;
 
 	function angle(i, total) {
@@ -79,7 +77,6 @@
 	viewBox="0 0 {size} {size}"
 	class="overflow-visible select-none"
 	aria-label="Radar de habilidades"
-	style="opacity: {isEmpty ? 0.45 : 1}; transition: opacity 0.3s;"
 >
 	<!-- Grid rings -->
 	{#each gridRings as scale}
@@ -106,26 +103,11 @@
 	{/each}
 
 	<!-- Data polygon fill -->
-	{#if isEmpty}
-		<!-- Ghost ring at 25% when no data -->
-		{@const ghostPts = Array.from({ length: displayN }, (_, i) => axisPoint(i, displayN, 0.25))}
-		<polygon
-			points={ghostPts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}
-			fill={fillColor}
-			stroke={strokeColor}
-			stroke-width="1"
-			stroke-dasharray="3 2"
-			stroke-linejoin="round"
-		/>
-		<!-- Lock icon centered -->
-		<text x={cx} y={cy} text-anchor="middle" dominant-baseline="middle" font-size="14" opacity="0.5">🔓</text>
-	{:else}
-		<polygon points={dataPolygon} fill={fillColor} stroke={strokeColor} stroke-width="1.5" stroke-linejoin="round" />
-		<!-- Data point dots -->
-		{#each dataPoints as p}
-			<circle cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r="3" fill={strokeColor} />
-		{/each}
-	{/if}
+	<polygon points={dataPolygon} fill={fillColor} stroke={strokeColor} stroke-width="1.5" stroke-linejoin="round" />
+	<!-- Data point dots -->
+	{#each dataPoints as p}
+		<circle cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r="3" fill={strokeColor} />
+	{/each}
 
 	<!-- Labels -->
 	{#each displayEntries as [key, value], i}
@@ -141,17 +123,15 @@
 			font-weight="600"
 			fill={labelFill}
 		>{label}</text>
-		{#if !isEmpty}
-			<text
-				x={lp.x.toFixed(2)}
-				y={(lp.y + 9).toFixed(2)}
-				text-anchor={anchor}
-				dominant-baseline="middle"
-				font-size="7"
-				fill={strokeColor}
-				font-weight="700"
-			>{value}</text>
-		{/if}
+		<text
+			x={lp.x.toFixed(2)}
+			y={(lp.y + 9).toFixed(2)}
+			text-anchor={anchor}
+			dominant-baseline="middle"
+			font-size="7"
+			fill={strokeColor}
+			font-weight="700"
+		>{value}</text>
 	{/each}
 
 	<!-- Center dot -->

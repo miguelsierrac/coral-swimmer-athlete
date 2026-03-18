@@ -110,9 +110,6 @@
 				strokeColor={radarStroke}
 			/>
 		</div>
-		{#if !radarStats || Object.keys(radarStats).length < 3}
-			<p class="radar-empty-hint">Completa objetivos para desbloquear tu radar</p>
-		{/if}
 	</div>
 
 	<!-- 3. Badges Section -->
@@ -557,11 +554,5 @@
 		justify-content: center;
 	}
 
-	.radar-empty-hint {
-		text-align: center;
-		font-size: 11px;
-		color: #94a3b8;
-		margin: 4px 0 0;
-		letter-spacing: 0.2px;
-	}
+
 </style>
