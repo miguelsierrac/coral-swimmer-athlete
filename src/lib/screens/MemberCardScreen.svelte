@@ -11,7 +11,7 @@
 		trackNotificationDismissed,
 		trackNotificationClearedAll
 	} from '$lib/infrastructure/AnalyticsService.js';
-	import { getCardSkin, getSkinById, getAllSkins } from '$lib/utils/cardSkin.js';
+	import { getCardSkin, getSkinById, getAllSkins, getFrameById, getAllFrames } from '$lib/utils/cardSkin.js';
 	import CardStickers from '$lib/components/CardStickers.svelte';
 
 	// Fixed slots on the hero zone (top/left as % of card-face)
@@ -43,6 +43,7 @@
 
 	// Edit-mode state
 	let isEditMode = false;
+	let activeTab = 'stickers'; // 'stickers' | 'fondo' | 'borde'
 
 	// active sticker IDs chosen by the user (null = not yet initialised from storage)
 	let activeStickerIds = null;
@@ -50,8 +51,11 @@
 	let stickerPositions = {};
 	// custom skin ID chosen by the user (null = use level default)
 	let customSkinId = null;
-	// all available skin swatches for the picker (constant — catalog never changes at runtime)
+	// custom frame ID chosen by the user (null = no frame)
+	let customFrameId = null;
+	// all available skin/frame swatches for the picker (constant — catalog never changes at runtime)
 	const SKINS_LIST = getAllSkins();
+	const FRAMES_LIST = getAllFrames();
 
 	// Initialise once athlete + completedBadges are ready
 	$: if (athlete?.id && completedBadges && activeStickerIds === null) {
@@ -64,6 +68,7 @@
 		}
 		if (saved?.positions) stickerPositions = saved.positions;
 		if (saved?.skinId) customSkinId = saved.skinId;
+		if (saved?.frameId) customFrameId = saved.frameId;
 	}
 
 	function toggleEditMode() {
@@ -76,17 +81,22 @@
 		} else {
 			activeStickerIds = [...activeStickerIds, fileId];
 		}
-		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
 	function moveStickerPosition(id, top, left) {
 		stickerPositions = { ...stickerPositions, [id]: { top, left } };
-		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
 	function selectSkin(skinId) {
 		customSkinId = skinId === 'default' ? null : skinId;
-		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
+	}
+
+	function selectFrame(frameId) {
+		customFrameId = frameId === 'none' ? null : frameId;
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId, frameId: customFrameId });
 	}
 
 	export let athlete;
@@ -101,6 +111,7 @@
 
 	$: levelSkin = getCardSkin(level?.id ?? null);
 	$: skin = customSkinId ? (getSkinById(customSkinId) ?? levelSkin) : levelSkin;
+	$: activeFrameClass = customFrameId ? (getFrameById(customFrameId)?.frameClass ?? '') : '';
 
 	// Build radar stats by accumulating radar_stats from every completed objective across all levels
 	$: radarStats = (() => {
@@ -226,6 +237,18 @@
 		}
 		return result;
 	})();
+
+	// All unique frame IDs the user has earned
+	// TODO: remove debug override — unlocks all frames for preview
+	$: allEarnedFrameIds = FRAMES_LIST.map(f => f.id);
+	/* $: allEarnedFrameIds = (() => {
+		const result = [];
+		for (const badge of completedBadges) {
+			const r = badge.meta_game?.reward;
+			if (r?.tipo === 'borde' && !result.includes(r.id)) result.push(r.id);
+		}
+		return result;
+	})(); */
 
 	// All unique skin IDs the user has earned
 	$: allEarnedSkinIds = (() => {
@@ -461,7 +484,7 @@
 	{/if}
 
 	<div class="page-wrapper">
-		<div class="card-scene">
+		<div class="card-scene {activeFrameClass}">
 			<div class="card-inner" class:is-flipped={isFlipped}>
 				<!-- Capas para simular grosor 3D -->
 				<div class="thickness-layer" style="transform: translateZ(-2px)"></div>
@@ -637,63 +660,95 @@
 								<button class="edit-panel-close" on:click={toggleEditMode} aria-label="Cerrar">✕</button>
 							</div>
 
-							<section class="edit-section">
-								<h4 class="edit-section-title">🏷️ Mis Stickers</h4>
-								<div class="sticker-grid">
-									{#each allEarnedStickerFiles as fileId}
-										{@const active = (activeStickerIds ?? []).includes(fileId)}
-										{@const atLimit = (activeStickerIds ?? []).length >= STICKER_SLOTS.length && !active}
-										<button
-											class="sticker-thumb"
-											class:sticker-thumb-active={active}
-											class:sticker-thumb-limit={atLimit}
-											on:click={() => !atLimit && toggleSticker(fileId)}
-											title={active ? 'Quitar sticker' : atLimit ? `Máximo ${STICKER_SLOTS.length} stickers` : 'Agregar sticker'}
-										>
-											<img
-												src="/stickers/{fileId}.svg"
-												alt={fileId}
-												on:error={(e) => { e.currentTarget.style.display = 'none'; }}
-											/>
-											{#if active}
-												<span class="sticker-check">✓</span>
-											{/if}
-										</button>
-									{/each}
-								</div>
-								<p class="edit-hint">{(activeStickerIds ?? []).length}/{STICKER_SLOTS.length} activos</p>
-							</section>
+							<!-- Tab bar -->
+							<div class="edit-tabs" role="tablist">
+								<button class="edit-tab" class:edit-tab-active={activeTab === 'stickers'} role="tab" on:click={() => activeTab = 'stickers'}>🏷️ Stickers</button>
+								<button class="edit-tab" class:edit-tab-active={activeTab === 'fondo'}    role="tab" on:click={() => activeTab = 'fondo'}>🎨 Fondo</button>
+								<button class="edit-tab" class:edit-tab-active={activeTab === 'borde'}    role="tab" on:click={() => activeTab = 'borde'}>🖼️ Borde</button>
+							</div>
 
-							<section class="edit-section">
-								<h4 class="edit-section-title">🎨 Fondo</h4>
-								<div class="skin-grid">
-									<!-- Default = level skin, always available -->
-									<button
-										class="skin-swatch"
-										class:skin-swatch-active={!customSkinId}
-										on:click={() => selectSkin('default')}
-										title="Original"
-									>
-										<span class="skin-preview" style="background:{levelSkin.gradient}"></span>
-										<span class="skin-label">Original</span>
-									</button>
-									{#each SKINS_LIST as sk}
-										{@const unlocked = allEarnedSkinIds.includes(sk.id)}
+							<!-- Tab body (scrollable) -->
+							<div class="edit-tab-body">
+								{#if activeTab === 'stickers'}
+									<div class="sticker-grid">
+										{#each allEarnedStickerFiles as fileId}
+											{@const active = (activeStickerIds ?? []).includes(fileId)}
+											{@const atLimit = (activeStickerIds ?? []).length >= STICKER_SLOTS.length && !active}
+											<button
+												class="sticker-thumb"
+												class:sticker-thumb-active={active}
+												class:sticker-thumb-limit={atLimit}
+												on:click={() => !atLimit && toggleSticker(fileId)}
+												title={active ? 'Quitar sticker' : atLimit ? `Máximo ${STICKER_SLOTS.length} stickers` : 'Agregar sticker'}
+											>
+												<img
+													src="/stickers/{fileId.replace('_holo', '')}.svg"
+													alt={fileId}
+													on:error={(e) => { e.currentTarget.style.display = 'none'; }}
+												/>
+												{#if active}
+													<span class="sticker-check">✓</span>
+												{/if}
+											</button>
+										{/each}
+									</div>
+									<p class="edit-hint">{(activeStickerIds ?? []).length}/{STICKER_SLOTS.length} activos · Arrastra para reposicionar</p>
+								{:else if activeTab === 'fondo'}
+									<div class="skin-grid">
 										<button
 											class="skin-swatch"
-											class:skin-swatch-active={customSkinId === sk.id}
-											class:skin-swatch-locked={!unlocked}
-											disabled={!unlocked}
-											on:click={() => unlocked && selectSkin(sk.id)}
-											title={unlocked ? sk.label : '🔒 Bloqueado'}
+											class:skin-swatch-active={!customSkinId}
+											on:click={() => selectSkin('default')}
+											title="Original"
 										>
-											<span class="skin-preview" style="background:{sk.gradient}"></span>
-											{#if !unlocked}<span class="skin-lock">🔒</span>{/if}
-											<span class="skin-label">{sk.label}</span>
+											<span class="skin-preview" style="background:{levelSkin.gradient}"></span>
+											<span class="skin-label">Original</span>
 										</button>
-									{/each}
-								</div>
-							</section>
+										{#each SKINS_LIST as sk}
+											{@const unlocked = allEarnedSkinIds.includes(sk.id)}
+											<button
+												class="skin-swatch"
+												class:skin-swatch-active={customSkinId === sk.id}
+												class:skin-swatch-locked={!unlocked}
+												disabled={!unlocked}
+												on:click={() => unlocked && selectSkin(sk.id)}
+												title={unlocked ? sk.label : '🔒 Bloqueado'}
+											>
+												<span class="skin-preview" style="background:{sk.gradient}"></span>
+												{#if !unlocked}<span class="skin-lock">🔒</span>{/if}
+												<span class="skin-label">{sk.label}</span>
+											</button>
+										{/each}
+									</div>
+								{:else if activeTab === 'borde'}
+									<div class="frame-grid">
+										<button
+											class="frame-thumb"
+											class:frame-thumb-active={!customFrameId}
+											on:click={() => selectFrame('none')}
+											title="Sin borde"
+										>
+											<span class="frame-preview frame-preview-none"></span>
+											<span class="frame-label">Ninguno</span>
+										</button>
+										{#each FRAMES_LIST as fr}
+											{@const unlocked = allEarnedFrameIds.includes(fr.id)}
+											<button
+												class="frame-thumb"
+												class:frame-thumb-active={customFrameId === fr.id}
+												class:frame-thumb-locked={!unlocked}
+												disabled={!unlocked}
+												on:click={() => unlocked && selectFrame(fr.id)}
+												title={unlocked ? fr.label : '🔒 Bloqueado'}
+											>
+												<span class="frame-preview" style="border-color:{fr.color}; box-shadow:0 0 6px {fr.color};"></span>
+												{#if !unlocked}<span class="frame-lock">🔒</span>{/if}
+												<span class="frame-label">{fr.label}</span>
+											</button>
+										{/each}
+									</div>
+								{/if}
+							</div>
 						</div>
 					{/if}
 					<!-- Banner Teaser -->
@@ -1367,9 +1422,12 @@
 		z-index: 30;
 		background: white;
 		border-radius: 20px 20px 0 0;
-		padding: 8px 16px 24px;
+		padding: 8px 16px 0;
 		box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
 		animation: slide-up 0.25s cubic-bezier(0.32,0.72,0,1) both;
+		display: flex;
+		flex-direction: column;
+		max-height: 46%;
 	}
 	@keyframes slide-up {
 		from { transform: translateY(100%); }
@@ -1403,14 +1461,40 @@
 		padding: 2px 4px;
 		line-height: 1;
 	}
-	.edit-section { margin-bottom: 4px; }
-	.edit-section-title {
+	/* Tab bar */
+	.edit-tabs {
+		display: flex;
+		gap: 4px;
+		margin-bottom: 2px;
+		border-bottom: 1.5px solid #f1f5f9;
+		flex-shrink: 0;
+	}
+	.edit-tab {
+		flex: 1;
+		background: none;
+		border: none;
+		padding: 7px 4px;
 		font-size: 12px;
-		font-weight: 600;
-		color: #64748b;
-		margin: 0 0 8px;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
+		font-weight: 500;
+		color: #94a3b8;
+		cursor: pointer;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -1.5px;
+		transition: color 0.15s, border-color 0.15s;
+		white-space: nowrap;
+	}
+	.edit-tab-active {
+		color: var(--primary-blue);
+		border-bottom-color: var(--primary-blue);
+		font-weight: 700;
+	}
+	/* Scrollable tab body */
+	.edit-tab-body {
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		padding: 10px 4px 20px;
+		margin: 0 -4px;
+		flex: 1;
 	}
 	.sticker-grid {
 		display: flex;
@@ -1512,6 +1596,67 @@
 		font-size: 9px;
 		line-height: 1;
 	}
+
+	/* ── Frame picker ── */
+	.frame-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.frame-thumb {
+		position: relative;
+		width: 56px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+		border: 2px solid transparent;
+		border-radius: 10px;
+		background: none;
+		cursor: pointer;
+		padding: 2px;
+		transition: border-color 0.15s, transform 0.15s, opacity 0.15s;
+	}
+	.frame-preview {
+		display: block;
+		width: 44px;
+		height: 32px;
+		border-radius: 7px;
+		border: 3px solid currentColor;
+		background: #f8fafc;
+	}
+	.frame-preview-none {
+		border: 2px dashed #cbd5e1;
+		background: transparent;
+	}
+	.frame-thumb-active {
+		border-color: var(--primary-blue);
+		transform: scale(1.06);
+	}
+	.frame-thumb-locked {
+		opacity: 0.38;
+		cursor: not-allowed;
+	}
+	.frame-label {
+		font-size: 9px;
+		font-weight: 500;
+		color: #64748b;
+		line-height: 1;
+		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 52px;
+	}
+	.frame-lock {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		font-size: 9px;
+		line-height: 1;
+	}
+	/* Frame animation classes are defined in app.css (global scope)
+	   to avoid Svelte hashing @keyframes names. */
 
 
 	.flip-btn {

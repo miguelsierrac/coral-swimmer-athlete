@@ -112,3 +112,37 @@ export function getSkinById(skinId) {
 export function getAllSkins() {
 	return Object.entries(SKIN_CATALOG).map(([id, s]) => ({ id, ...s }));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Frame catalog — earned card border effects
+// frameClass is applied as a CSS class on .card-face.card-front.
+// The actual styles live in MemberCardScreen.svelte (supports @keyframes).
+// ─────────────────────────────────────────────────────────────────────────────
+const FRAME_CATALOG = {
+	// Kids plan
+	frame_kids_cyan:       { label: 'Cian',        color: '#22d3ee', frameClass: 'frame-kids-cyan' },
+	frame_kids_blue:       { label: 'Azul',        color: '#2563eb', frameClass: 'frame-kids-blue' },
+	frame_orca_dark:       { label: 'Orca Dark',   color: '#1e293b', frameClass: 'frame-orca-dark' },
+	// Adults & élite
+	frame_flow_eterno:     { label: 'Flow',        color: '#2dd4bf', frameClass: 'frame-flow-eterno' },
+	frame_neon_turbo:      { label: 'Neón Turbo',  color: '#22d3ee', frameClass: 'frame-neon-turbo' },
+	frame_vortex_neon:     { label: 'Vórtex',      color: '#818cf8', frameClass: 'frame-vortex-neon' },
+	frame_titan_holograma: { label: 'Titán Holo',  color: '#a5f3fc', frameClass: 'frame-titan-holograma' },
+};
+
+/**
+ * Returns a frame configuration by reward ID, or null if not found.
+ * @param {string} frameId
+ * @returns {{ label: string, color: string, frameClass: string }|null}
+ */
+export function getFrameById(frameId) {
+	return FRAME_CATALOG[frameId] ?? null;
+}
+
+/**
+ * Returns all unlockable frames as an array for use in the frame picker UI.
+ * @returns {{ id: string, label: string, color: string, frameClass: string }[]}
+ */
+export function getAllFrames() {
+	return Object.entries(FRAME_CATALOG).map(([id, f]) => ({ id, ...f }));
+}

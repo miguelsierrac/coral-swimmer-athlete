@@ -1,3 +1,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Card frame animations ─────────────────────────────────────────────────
+   Applied on .card-scene (avoids mask-image clipping on .card-face).
+   Subtle pulsing glow — small radius, low opacity.
+────────────────────────────────────────────────────────────────────────── */
+
+@keyframes frame-pulse-cyan {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(34,211,238,0.4); }
+  50%       { box-shadow: 0 0 10px 3px rgba(34,211,238,0.7); }
+}
+.frame-kids-cyan {
+  border-radius: 24px;
+  border: 3px solid #22d3ee;
+  animation: frame-pulse-cyan 2.4s ease-in-out infinite;
+}
+
+@keyframes frame-pulse-blue {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(37,99,235,0.4); }
+  50%       { box-shadow: 0 0 10px 3px rgba(37,99,235,0.7); }
+}
+.frame-kids-blue {
+  border-radius: 24px;
+  border: 3px solid #2563eb;
+  animation: frame-pulse-blue 2.4s ease-in-out infinite;
+}
+
+@keyframes frame-orca {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(100,140,200,0.2); }
+  50%       { box-shadow: 0 0 10px 3px rgba(100,140,200,0.45); }
+}
+.frame-orca-dark {
+  border-radius: 24px;
+  border: 4px solid #1e293b;
+  animation: frame-orca 3s ease-in-out infinite;
+}
+
+@keyframes frame-flow {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(45,212,191,0.35); }
+  50%       { box-shadow: 0 0 10px 3px rgba(45,212,191,0.65); }
+}
+.frame-flow-eterno {
+  border-radius: 24px;
+  border-top: 4px solid #2dd4bf;
+  border-bottom: 4px solid #2dd4bf;
+  border-left: 2px solid #2dd4bf;
+  border-right: 2px solid #2dd4bf;
+  animation: frame-flow 2.2s ease-in-out infinite;
+}
+
+@keyframes frame-neon-turbo {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(34,211,238,0.5); }
+  50%       { box-shadow: 0 0 10px 3px rgba(34,211,238,0.85); }
+}
+.frame-neon-turbo {
+  border-radius: 24px;
+  border: 2px solid #22d3ee;
+  animation: frame-neon-turbo 1.2s ease-in-out infinite;
+}
+
+@keyframes frame-vortex-neon {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(129,140,248,0.45); border-color: #818cf8; }
+  50%       { box-shadow: 0 0 10px 3px rgba(129,140,248,0.8); border-color: #c7d2fe; }
+}
+.frame-vortex-neon {
+  border-radius: 24px;
+  border: 2px solid #818cf8;
+  animation: frame-vortex-neon 2s ease-in-out infinite;
+}
+
+@keyframes frame-titan-rainbow {
+  0%   { border-color: #93c5fd; box-shadow: 0 0 6px 2px rgba(59,130,246,0.55); }
+  25%  { border-color: #c4b5fd; box-shadow: 0 0 6px 2px rgba(139,92,246,0.55); }
+  50%  { border-color: #67e8f9; box-shadow: 0 0 6px 2px rgba(6,182,212,0.55); }
+  75%  { border-color: #5eead4; box-shadow: 0 0 6px 2px rgba(20,184,166,0.55); }
+  100% { border-color: #93c5fd; box-shadow: 0 0 6px 2px rgba(59,130,246,0.55); }
+}
+.frame-titan-holograma {
+  border-radius: 24px;
+  border: 2px solid #93c5fd;
+  animation: frame-titan-rainbow 4s linear infinite;
+}

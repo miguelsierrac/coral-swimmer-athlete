@@ -40,12 +40,13 @@
 
 {#each stickers as sticker (sticker.id)}
 	<img
-		src="/stickers/{sticker.id}.svg"
+		src="/stickers/{sticker.id.replace('_holo', '')}.svg"
 		alt=""
 		role="presentation"
 		aria-hidden="true"
 		class="sticker"
 		class:sticker-edit={isEditMode}
+		class:sticker-holo={sticker.id.includes('_holo')}
 		class:sticker-dragging={dragging?.id === sticker.id}
 		style="top: {dragging?.id === sticker.id ? dragTop : sticker.top}%; left: {dragging?.id === sticker.id ? dragLeft : sticker.left}%; transform: rotate({sticker.rotate ?? 0}deg);"
 		on:pointerdown={(e) => onPointerDown(e, sticker)}
@@ -83,6 +84,22 @@
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.6));
 		animation: none;
 		outline-style: solid;
+	}
+
+	/* Holographic rainbow glow for _holo stickers */
+	.sticker-holo {
+		animation:
+			sticker-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both,
+			sticker-holo-glow 2.4s 0.4s linear infinite;
+	}
+	/* Keep drag override working for holo stickers too */
+	.sticker-holo.sticker-dragging {
+		animation: none;
+	}
+
+	@keyframes sticker-holo-glow {
+		0%   { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)) hue-rotate(0deg)   saturate(1.8) brightness(1.15); }
+		100% { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)) hue-rotate(360deg) saturate(1.8) brightness(1.15); }
 	}
 
 	@keyframes sticker-pop {
