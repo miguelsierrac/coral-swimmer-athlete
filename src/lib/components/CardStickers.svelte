@@ -1,28 +1,57 @@
 <script>
-	/**
-	 * Renders decorative stickers positioned absolutely over the card.
-	 * Each sticker: { id: string, top: number, left: number, rotate?: number }
-	 * Images expected at /stickers/{id}.png (or .webp/.svg).
-	 * Falls back gracefully if the image 404s (hidden via onerror).
-	 */
+	import { createEventDispatcher } from 'svelte';
+
+	/** @type {{ id: string, top: number, left: number, rotate?: number }[]} */
 	export let stickers = [];
+	/** When true, stickers are draggable */
+	export let isEditMode = false;
+
+	const dispatch = createEventDispatcher();
+
+	let dragging = null;
+	let dragTop = 0, dragLeft = 0;
+
+	function onPointerDown(e, sticker) {
+		if (!isEditMode) return;
+		e.preventDefault();
+		const cardFace = e.currentTarget.closest('.card-face') ?? e.currentTarget.parentElement;
+		const { width, height } = cardFace.getBoundingClientRect();
+		e.currentTarget.setPointerCapture(e.pointerId);
+		dragging = { id: sticker.id, startX: e.clientX, startY: e.clientY,
+			origTop: sticker.top, origLeft: sticker.left, cardW: width, cardH: height };
+		dragTop  = sticker.top;
+		dragLeft = sticker.left;
+	}
+
+	function onPointerMove(e) {
+		if (!dragging) return;
+		const dx = e.clientX - dragging.startX;
+		const dy = e.clientY - dragging.startY;
+		dragTop  = Math.max(5,  Math.min(60, dragging.origTop  + (dy / dragging.cardH * 100)));
+		dragLeft = Math.max(-8, Math.min(82, dragging.origLeft + (dx / dragging.cardW * 100)));
+	}
+
+	function onPointerUp() {
+		if (!dragging) return;
+		dispatch('move', { id: dragging.id, top: dragTop, left: dragLeft });
+		dragging = null;
+	}
 </script>
 
-{#each stickers as sticker (sticker.id + sticker.top + sticker.left)}
+{#each stickers as sticker (sticker.id)}
 	<img
 		src="/stickers/{sticker.id}.svg"
 		alt=""
 		role="presentation"
 		aria-hidden="true"
 		class="sticker"
-		style="
-			top: {sticker.top}%;
-			left: {sticker.left}%;
-			transform: rotate({sticker.rotate ?? 0}deg);
-		"
-		on:error={(e) => {
-			e.currentTarget.style.display = 'none';
-		}}
+		class:sticker-edit={isEditMode}
+		class:sticker-dragging={dragging?.id === sticker.id}
+		style="top: {dragging?.id === sticker.id ? dragTop : sticker.top}%; left: {dragging?.id === sticker.id ? dragLeft : sticker.left}%; transform: rotate({sticker.rotate ?? 0}deg);"
+		on:pointerdown={(e) => onPointerDown(e, sticker)}
+		on:pointermove={onPointerMove}
+		on:pointerup={onPointerUp}
+		on:error={(e) => { e.currentTarget.style.display = 'none'; }}
 	/>
 {/each}
 
@@ -34,13 +63,26 @@
 		object-fit: contain;
 		pointer-events: none;
 		user-select: none;
-
-		/* Simulate physically-stuck sticker */
 		filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 		z-index: 12;
-
-		/* Subtle entrance animation */
 		animation: sticker-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+	}
+
+	/* Edit mode: draggable stickers */
+	.sticker-edit {
+		pointer-events: auto;
+		cursor: grab;
+		touch-action: none;
+		outline: 2px dashed rgba(255, 255, 255, 0.8);
+		outline-offset: 3px;
+		border-radius: 4px;
+	}
+	.sticker-dragging {
+		cursor: grabbing !important;
+		z-index: 20;
+		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.6));
+		animation: none;
+		outline-style: solid;
 	}
 
 	@keyframes sticker-pop {

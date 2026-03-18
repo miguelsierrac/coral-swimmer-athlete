@@ -22,6 +22,10 @@
 		{ top: 10, left: 4,  rotate:  12 },
 		{ top: 23, left: 80, rotate:  -4 },
 	];
+	// The drag-canvas height represents the top HERO_H% of the card face
+	const HERO_HEIGHT_PCT = 55;
+	const DRAG_TOP_MIN  =  5, DRAG_TOP_MAX  = 60;
+	const DRAG_LEFT_MIN = -8, DRAG_LEFT_MAX = 82;
 
 	// ── Card customisation (localStorage) ───────────────────────
 	function customKey(id) { return `card_custom_${id}`; }
@@ -42,6 +46,8 @@
 
 	// active sticker IDs chosen by the user (null = not yet initialised from storage)
 	let activeStickerIds = null;
+	// custom positions per fileId: { [fileId]: { top: number, left: number } }
+	let stickerPositions = {};
 
 	// Initialise once athlete + completedBadges are ready
 	$: if (athlete?.id && completedBadges && activeStickerIds === null) {
@@ -52,6 +58,7 @@
 			// First time: all earned stickers active by default
 			activeStickerIds = allEarnedStickerFiles;
 		}
+		if (saved?.positions) stickerPositions = saved.positions;
 	}
 
 	function toggleEditMode() {
@@ -64,7 +71,12 @@
 		} else {
 			activeStickerIds = [...activeStickerIds, fileId];
 		}
-		saveCustom(athlete.id, { stickers: activeStickerIds });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions });
+	}
+
+	function moveStickerPosition(id, top, left) {
+		stickerPositions = { ...stickerPositions, [id]: { top, left } };
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions });
 	}
 
 	export let athlete;
@@ -207,7 +219,11 @@
 	// Stickers to render on the card = active ones, positioned in STICKER_SLOTS
 	$: displayedStickers = (activeStickerIds ?? allEarnedStickerFiles)
 		.slice(0, STICKER_SLOTS.length)
-		.map((fileId, i) => ({ id: fileId, ...STICKER_SLOTS[i] }));
+		.map((fileId, i) => {
+			const slot = STICKER_SLOTS[i];
+			const custom = stickerPositions[fileId];
+			return { id: fileId, top: custom?.top ?? slot.top, left: custom?.left ?? slot.left, rotate: slot.rotate };
+		});
 	$: recentAchievements = completedBadges.filter(b => {
 		// Opcional: si tienes timestamp de cuándo se completó, puedes filtrar por recientes
 		// Por ahora, cualquier badge completado cuenta como "reciente"
@@ -513,8 +529,11 @@
 							</div>
 						</div>
 
-						<!-- ── HERO: avatar + identity on gradient ── -->
-						<div class="nc-hero {skin.textureClass}" class:nc-hero-dark={skin.isDark} style="--skin-gradient:{skin.gradient}">
+						<!-- ── HERO: avatar + identity on gradient (drag zone when editing) ── -->
+						<div class="nc-hero {skin.textureClass}" class:nc-hero-dark={skin.isDark} class:nc-hero-edit={isEditMode} style="--skin-gradient:{skin.gradient}">
+							{#if isEditMode && displayedStickers.length > 0}
+								<div class="drag-zone-hint">↔ Arrastra los stickers aquí</div>
+							{/if}
 							{#if athlete.photo}
 								<div class="nc-av" style="background-image: url({athlete.photo});"></div>
 							{:else}
@@ -581,17 +600,21 @@
 					</div>
 					<!-- Stickers ganados superpuestos sobre la cara frontal -->
 					{#if displayedStickers.length > 0}
-						<CardStickers stickers={displayedStickers} {isEditMode} />
+						<CardStickers
+							stickers={displayedStickers}
+							{isEditMode}
+							on:move={(e) => moveStickerPosition(e.detail.id, e.detail.top, e.detail.left)}
+						/>
 					{/if}
 
 					<!-- Panel de edición -->
 					{#if isEditMode}
-						<!-- Backdrop para cerrar -->
-						<button class="edit-backdrop" on:click={toggleEditMode} aria-label="Cerrar editor" />
-
 						<div class="edit-panel">
 							<div class="edit-panel-handle"></div>
-							<p class="edit-panel-title">✏️ Personalizar Carnet</p>
+							<div class="edit-panel-header">
+								<p class="edit-panel-title">✏️ Personalizar Carnet</p>
+								<button class="edit-panel-close" on:click={toggleEditMode} aria-label="Cerrar">✕</button>
+							</div>
 
 							<section class="edit-section">
 								<h4 class="edit-section-title">🏷️ Mis Stickers</h4>
@@ -1171,15 +1194,25 @@
 	}
 	.card-inner.is-flipped .card-front .edit-btn { opacity: 0; pointer-events: none; }
 
-	/* Edit panel backdrop */
-	.edit-backdrop {
+	/* Hero drag zone highlight */
+	.nc-hero-edit {
+		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+	}
+	.drag-zone-hint {
 		position: absolute;
-		inset: 0;
-		z-index: 29;
-		background: rgba(0,0,0,0.25);
-		border: none;
-		cursor: pointer;
-		border-radius: 24px;
+		bottom: 7px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: rgba(0, 0, 0, 0.4);
+		color: rgba(255, 255, 255, 0.95);
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+		padding: 3px 10px;
+		border-radius: 20px;
+		pointer-events: none;
+		z-index: 13;
+		white-space: nowrap;
 	}
 
 	/* Edit bottom sheet */
@@ -1206,12 +1239,26 @@
 		border-radius: 2px;
 		margin: 0 auto 10px;
 	}
+	.edit-panel-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin: 0 0 12px;
+	}
 	.edit-panel-title {
 		font-size: 14px;
 		font-weight: 700;
 		color: #1e293b;
-		margin: 0 0 12px;
-		text-align: center;
+		margin: 0;
+	}
+	.edit-panel-close {
+		background: none;
+		border: none;
+		font-size: 16px;
+		color: #94a3b8;
+		cursor: pointer;
+		padding: 2px 4px;
+		line-height: 1;
 	}
 	.edit-section { margin-bottom: 4px; }
 	.edit-section-title {
@@ -1269,6 +1316,7 @@
 		color: #94a3b8;
 		margin: 6px 0 0;
 	}
+
 
 	.flip-btn {
 		position: absolute;
