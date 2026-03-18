@@ -239,16 +239,14 @@
 	})();
 
 	// All unique frame IDs the user has earned
-	// TODO: remove debug override — unlocks all frames for preview
-	$: allEarnedFrameIds = FRAMES_LIST.map(f => f.id);
-	/* $: allEarnedFrameIds = (() => {
+	$: allEarnedFrameIds = (() => {
 		const result = [];
 		for (const badge of completedBadges) {
 			const r = badge.meta_game?.reward;
 			if (r?.tipo === 'borde' && !result.includes(r.id)) result.push(r.id);
 		}
 		return result;
-	})(); */
+	})();
 
 	// All unique skin IDs the user has earned
 	$: allEarnedSkinIds = (() => {
@@ -525,7 +523,7 @@
 						<button 
 							class="flip-btn" 
 							class:has-notifications={hasNewAchievements}
-							on:click={() => (isFlipped = !isFlipped)}
+							on:click={() => { isFlipped = !isFlipped; isEditMode = false; }}
 							title={hasNewAchievements ? '¡Tienes logros nuevos!' : 'Ver ficha técnica'}
 						>
 							{#if hasNewAchievements}
@@ -657,7 +655,7 @@
 							<div class="edit-panel-handle"></div>
 							<div class="edit-panel-header">
 								<p class="edit-panel-title">✏️ Personalizar Carnet</p>
-								<button class="edit-panel-close" on:click={toggleEditMode} aria-label="Cerrar">✕</button>
+								<button class="edit-panel-close" on:click={toggleEditMode} aria-label="Cerrar">Listo</button>
 							</div>
 
 							<!-- Tab bar -->
@@ -755,7 +753,7 @@
 					{#if hasNewAchievements && athlete.tier !== 'standard'}
 						<button 
 							class="teaser-banner"
-							on:click={() => (isFlipped = !isFlipped)}
+							on:click={() => { isFlipped = !isFlipped; isEditMode = false; }}
 						>
 							<span class="teaser-icon">🌟</span>
 							<span class="teaser-text">
@@ -806,7 +804,7 @@
 						{radarStats}
 						newBadges={recentAchievements}
 						showNewIndicators={isFlipped && recentAchievements.length > 0}
-						on:flip={() => (isFlipped = !isFlipped)}
+						on:flip={() => { isFlipped = !isFlipped; isEditMode = false; }}
 					/>
 				</div>
 			</div>
@@ -1453,12 +1451,14 @@
 		margin: 0;
 	}
 	.edit-panel-close {
-		background: none;
+		background: var(--primary-blue);
 		border: none;
-		font-size: 16px;
-		color: #94a3b8;
+		border-radius: 20px;
+		font-size: 12px;
+		font-weight: 700;
+		color: white;
 		cursor: pointer;
-		padding: 2px 4px;
+		padding: 5px 14px;
 		line-height: 1;
 	}
 	/* Tab bar */
