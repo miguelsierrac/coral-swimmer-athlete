@@ -18,6 +18,7 @@
 	export let totalDistance = null; // Total distance swam
 	export let userName = ''; // User's name for achievements greeting
 	export let initialTab = 'ranking'; // Initial tab to display
+	export let radarStats = null; // Accumulated radar stats from completed objectives
 	const provider = getContext('provider');
 	let rankedUsers = [];
 	let selectedLevelId = null;
@@ -284,6 +285,7 @@
 			{:else}
 				<!-- Tab de Mis Logros -->
 			<AchievementsView
+				{radarStats}
 				{userLevel}
 				{allLevels}
 				{badges}
@@ -312,7 +314,7 @@
 	</div>
 {/if}
 	<style>
-		.loader-container {
+	.loader-container {
 			display: flex;
 			flex-direction: column;
 			align-items: center;

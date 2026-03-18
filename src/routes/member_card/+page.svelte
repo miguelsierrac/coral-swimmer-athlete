@@ -218,4 +218,5 @@
 	{isLoading}
 	{gamificationLevels}
 	currentUserID={$athlete?.id}
+	gamificationProgress={userGamificationProgress}
 />

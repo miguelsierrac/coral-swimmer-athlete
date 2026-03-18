@@ -1,10 +1,24 @@
 <script>
+	import SkillRadar from '$lib/components/SkillRadar.svelte';
+
 	export let userLevel = null;
 	export let allLevels = [];
 	export let badges = [];
 	export let totalBadgePoints = 0;
 	export let onShareAchievements = () => {};
 	export let onBadgeClick = () => {};
+	export let radarStats = null;
+
+	function hexToRgba(hex, alpha = 0.18) {
+		if (!hex || !hex.startsWith('#') || hex.length < 7) return `rgba(66,133,244,${alpha})`;
+		const r = parseInt(hex.slice(1, 3), 16);
+		const g = parseInt(hex.slice(3, 5), 16);
+		const b = parseInt(hex.slice(5, 7), 16);
+		return `rgba(${r},${g},${b},${alpha})`;
+	}
+
+	$: radarFill = hexToRgba(userLevel?.color);
+	$: radarStroke = userLevel?.color || '#4285f4';
 
 	// Calculate previous and next levels
 	$: previousLevel = userLevel?.nivel_anterior 
@@ -84,7 +98,24 @@
 		</div>
 	</div>
 
-	<!-- 2. Badges Section -->
+	<!-- 2. Radar de Habilidades -->
+	<div class="radar-panel">
+		<p class="radar-panel-title" style="color: {radarStroke};">🕸️ Radar de Habilidades</p>
+		<div class="radar-panel-inner">
+			<SkillRadar
+				stats={radarStats ?? {}}
+				size={140}
+				theme="light"
+				fillColor={radarFill}
+				strokeColor={radarStroke}
+			/>
+		</div>
+		{#if !radarStats || Object.keys(radarStats).length < 3}
+			<p class="radar-empty-hint">Completa objetivos para desbloquear tu radar</p>
+		{/if}
+	</div>
+
+	<!-- 3. Badges Section -->
 	<div class="badges-section">
 		<div class="section-header">
 			<div class="section-header-left">
@@ -505,5 +536,32 @@
 			grid-template-columns: repeat(4, 1fr);
 			gap: 12px;
 		}
+	}
+
+	.radar-panel {
+		margin: 0 0 12px;
+		background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+		border-radius: 16px;
+		padding: 14px 12px 10px;
+		border: 1px solid rgba(0, 0, 0, 0.07);
+	}
+
+	.radar-panel-title {
+		font-size: 13px;
+		font-weight: 700;
+		margin: 0 0 8px 4px;
+	}
+
+	.radar-panel-inner {
+		display: flex;
+		justify-content: center;
+	}
+
+	.radar-empty-hint {
+		text-align: center;
+		font-size: 11px;
+		color: #94a3b8;
+		margin: 4px 0 0;
+		letter-spacing: 0.2px;
 	}
 </style>

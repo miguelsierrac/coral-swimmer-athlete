@@ -34,6 +34,8 @@
 	export let totalDistance = null;
 	export let newBadges = []; // Nuevos badges completados
 	export let showNewIndicators = false; // Mostrar indicadores de novedad
+	/** radar_stats from meta_game: { potencia, resistencia, tecnica, apnea } */
+	export let radarStats = null;
 
 	const dispatch = createEventDispatcher();
 
@@ -84,6 +86,10 @@
 	// Reactividad para facilitar la lectura en el HTML
 	$: isKids = tier === 'kids';
 	$: isPerformance = tier === 'performance';
+
+	// Objectives lock/unlock — ALL objectives must have at least 'bronce' to level up
+	$: lockedObjectives = (badges || []).filter((b) => !b.progress);
+	$: canLevelUp = (badges || []).length > 0 && lockedObjectives.length === 0 && !!level?.nivel_siguiente;
 
 	// Update stats with level and badges
 	$: {
@@ -313,6 +319,14 @@
 						<span class="xp-pill"
 							>{stats.levelProgress}% Completado • {(badges || []).length} objetivos</span
 						>
+						<!-- Objectives lock/unlock indicator -->
+						{#if canLevelUp}
+							<span class="level-unlock-badge">✅ ¡Listo para subir de nivel!</span>
+						{:else if lockedObjectives.length > 0}
+							<span class="level-lock-hint">
+								🔒 Pendiente: {lockedObjectives.map((b) => b.icono).join(' ')}
+							</span>
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -391,6 +405,14 @@
 									<span class="level-progress-compact">{stats.levelProgress}% Completado</span>
 								</div>
 							</div>
+							<!-- Objectives lock/unlock indicator -->
+							{#if canLevelUp}
+								<span class="level-unlock-badge level-unlock-compact">✅ ¡Listo!</span>
+							{:else if lockedObjectives.length > 0}
+								<span class="level-lock-hint level-lock-compact">
+									🔒 {lockedObjectives.map((b) => b.icono).join(' ')}
+								</span>
+							{/if}
 							{#if stats.specialty}
 								<div class="specialty-chips-inline">
 									<div class="specialty-chip-inline tool-chip">
@@ -499,6 +521,7 @@
 								userLevel={level}
 								specialty={stats.specialty}
 								{totalDistance}
+								{radarStats}
 								initialTab={leaderboardInitialTab}
 							/>
 						</section>
@@ -1473,4 +1496,39 @@
 			opacity: 0.7;
 		}
 	}
+
+	/* ── Objectives lock/unlock indicator ─────────────────────── */
+	.level-unlock-badge {
+		display: block;
+		margin-top: 6px;
+		font-size: 11px;
+		font-weight: 700;
+		color: #4ade80;
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+	}
+
+	.level-lock-hint {
+		display: block;
+		margin-top: 6px;
+		font-size: 11px;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.75);
+	}
+
+	.level-unlock-compact,
+	.level-lock-compact {
+		display: block;
+		font-size: 10px;
+		font-weight: 600;
+		margin-top: 4px;
+	}
+
+	.level-unlock-compact {
+		color: #4ade80;
+	}
+
+	.level-lock-compact {
+		color: rgba(255, 255, 255, 0.7);
+	}
+
 </style>

@@ -3,6 +3,7 @@
 	import TechnicalSheet from '$lib/screens/TechnicalSheet.svelte';
 	import ProductTour from '$lib/components/ProductTour.svelte';
 	import NotificationsDrawer from '$lib/components/NotificationsDrawer.svelte';
+	import UnlockPopup from '$lib/components/UnlockPopup.svelte';
 	import { notifications } from '$lib/stores.js';
 	import { tick } from 'svelte';
 	import {
@@ -10,6 +11,17 @@
 		trackNotificationDismissed,
 		trackNotificationClearedAll
 	} from '$lib/infrastructure/AnalyticsService.js';
+	import { getCardSkin } from '$lib/utils/cardSkin.js';
+	import CardStickers from '$lib/components/CardStickers.svelte';
+
+	// Fixed slots on the hero zone (top/left as % of card-face)
+	const STICKER_SLOTS = [
+		{ top: 37, left: 4,  rotate: -14 },
+		{ top: 37, left: 78, rotate:  10 },
+		{ top: 10, left: 78, rotate:  -8 },
+		{ top: 10, left: 4,  rotate:  12 },
+		{ top: 23, left: 80, rotate:  -4 },
+	];
 
 	export let athlete;
 	export let onLogOut;
@@ -19,6 +31,68 @@
 	export let isLoading = false;
 	export let gamificationLevels = [];
 	export let currentUserID;
+	export let gamificationProgress = null;
+
+	$: skin = getCardSkin(level?.id ?? null);
+
+	// Build radar stats by accumulating radar_stats from every completed objective across all levels
+	$: radarStats = (() => {
+		if (!gamificationProgress?.progreso_objetivos || !gamificationLevels?.length) return null;
+		const completedIds = Object.keys(gamificationProgress.progreso_objetivos).filter(
+			id => gamificationProgress.progreso_objetivos[id]
+		);
+		if (!completedIds.length) return null;
+		const allObjectives = gamificationLevels.flatMap(l => l.objetivos ?? []);
+		const acc = {};
+		for (const id of completedIds) {
+			const obj = allObjectives.find(o => o.id === id);
+			const stats = obj?.meta_game?.radar_stats;
+			if (!stats) continue;
+			for (const [key, val] of Object.entries(stats)) {
+				acc[key] = (acc[key] ?? 0) + val;
+			}
+		}
+		return Object.keys(acc).length >= 2 ? acc : null;
+	})();
+
+	// Collect unlock messages from newly-completed badges (those with a progress grade and an unlock_message)
+	$: pendingUnlockMessages = (() => {
+		if (!badges || !badges.length) return [];
+		return badges
+			.filter(b => b.progress && b.meta_game?.unlock_message)
+			.map(b => ({ msg: b.meta_game.unlock_message, key: `unlock_seen_${b.id}_${b.progress}` }));
+	})();
+
+	let showUnlockPopup = false;
+	let currentUnlock = null; // { msg, key }
+	let unlockQueue = [];
+
+	$: {
+		const unseen = pendingUnlockMessages.filter(u => {
+			try { return !localStorage.getItem(u.key); } catch { return false; }
+		});
+		if (unseen.length > 0 && !showUnlockPopup) {
+			unlockQueue = unseen;
+			showNextUnlock();
+		}
+	}
+
+	function showNextUnlock() {
+		if (unlockQueue.length === 0) return;
+		currentUnlock = unlockQueue[0];
+		unlockQueue = unlockQueue.slice(1);
+		showUnlockPopup = true;
+	}
+
+	function dismissUnlockPopup() {
+		if (currentUnlock) {
+			try { localStorage.setItem(currentUnlock.key, '1'); } catch {}
+			currentUnlock = null;
+		}
+		showUnlockPopup = false;
+		// Show next in queue after short delay
+		if (unlockQueue.length > 0) setTimeout(showNextUnlock, 400);
+	}
 
 	let isFlipped = false;
 	let showNotifDrawer = false;
@@ -70,6 +144,24 @@
 	// Detectar novedades en gamificación
 	$: completedBadges = badges.filter(b => b.progress !== null && b.progress !== undefined);
 	$: hasPendingRewards = completedBadges.length > 0;
+
+	// Derive earned stickers: completed badges with a sticker reward
+	$: earnedStickers = (() => {
+		const seen = new Set();
+		const result = [];
+		for (const badge of completedBadges) {
+			const rewardId = badge.meta_game?.reward?.id;
+			if (!rewardId || badge.meta_game?.reward?.tipo !== 'sticker') continue;
+			// Filename = reward ID without the sticker_ prefix
+			const file = rewardId.replace(/^sticker_/, '');
+			if (seen.has(file)) continue;
+			seen.add(file);
+			const slot = STICKER_SLOTS[result.length % STICKER_SLOTS.length];
+			result.push({ id: file, ...slot });
+			if (result.length >= STICKER_SLOTS.length) break;
+		}
+		return result;
+	})();
 	$: recentAchievements = completedBadges.filter(b => {
 		// Opcional: si tienes timestamp de cuándo se completó, puedes filtrar por recientes
 		// Por ahora, cualquier badge completado cuenta como "reciente"
@@ -349,247 +441,88 @@
 						</button>
 					{/if}
 
-					<div
-						class="relative flex size-full h-full flex-col bg-[#fcfaf8] justify-between group/design-root overflow-hidden"
-					>
-						<div>
-							<div class="flex p-4 @container">
-								<div class="flex w-full flex-col gap-4 items-center">
-									<div class="flex gap-4 flex-col items-center">
-										<div
-											class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl h-auto w-1/3"
-											style="background-image: url('logo_512.png');"
-										></div>
-										<div class="flex flex-col items-center justify-center">
-											<p
-												class="text-[#1c150d] text-[20px] font-bold leading-tight tracking-[-0.015em] text-center"
-											>
-												CLUB CORAL SWIMMER
-											</p>
-											<p class="text-[#9c7849] text-[14px] font-normal leading-normal text-center">
-												ID: {athlete.identification}
-											</p>
-											{#if !athlete.expiration_date}
-												<p
-													class="text-[#9c7849] text-[14px] text-red-600 font-bold leading-normal text-center"
-												>
-													Membresía ha expirado
-												</p>
-											{:else if expired(convertDateToUTC(new Date(athlete.expiration_date)))}
-												<p
-													class="text-[#9c7849] text-[14px] text-red-600 font-bold leading-normal text-center"
-												>
-													Expiró {convertDateToUTC(
-														new Date(athlete.expiration_date)
-													).toLocaleDateString('es-ES', {
-														day: 'numeric',
-														month: 'long',
-														year: 'numeric'
-													})}
-												</p>
-											{:else}
-												<p
-													class="text-[#9c7849] text-[14px] font-normal leading-normal text-center"
-												>
-													Valido hasta {convertDateToUTC(
-														new Date(athlete.expiration_date)
-													).toLocaleDateString('es-ES', {
-														day: 'numeric',
-														month: 'long',
-														year: 'numeric'
-													})}
-												</p>
-											{/if}
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
-								<div
-									class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
-									data-icon="Person"
-									data-size="18px"
-									data-weight="regular"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="18px"
-										height="18px"
-										fill="currentColor"
-										viewBox="0 0 256 256"
-									>
-										<path
-											d="M160,40a32,32,0,1,0-32,32A32,32,0,0,0,160,40ZM128,56a16,16,0,1,1,16-16A16,16,0,0,1,128,56Zm90.34,78.05L173.17,82.83a32,32,0,0,0-24-10.83H106.83a32,32,0,0,0-24,10.83L37.66,134.05a20,20,0,0,0,28.13,28.43l16.3-13.08L65.55,212.28A20,20,0,0,0,102,228.8l26-44.87,26,44.87a20,20,0,0,0,36.41-16.52L173.91,149.4l16.3,13.08a20,20,0,0,0,28.13-28.43Zm-11.51,16.77a4,4,0,0,1-5.66,0c-.21-.2-.42-.4-.65-.58L165,121.76A8,8,0,0,0,152.26,130L175.14,217a7.72,7.72,0,0,0,.48,1.35,4,4,0,1,1-7.25,3.38,6.25,6.25,0,0,0-.33-.63L134.92,164a8,8,0,0,0-13.84,0L88,221.05a6.25,6.25,0,0,0-.33.63,4,4,0,0,1-2.26,2.07,4,4,0,0,1-5-5.45,7.72,7.72,0,0,0,.48-1.35L103.74,130A8,8,0,0,0,91,121.76L55.48,150.24c-.23.18-.44.38-.65.58a4,4,0,1,1-5.66-5.65c.12-.12.23-.24.34-.37L94.83,93.41a16,16,0,0,1,12-5.41h42.34a16,16,0,0,1,12,5.41l45.32,51.39c.11.13.22.25.34.37A4,4,0,0,1,206.83,150.82Z"
-										></path>
-									</svg>
-								</div>
-								<p
-									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
-								>
-									{athlete.forename}
-									{athlete.surname}
-								</p>
-							</div>
-							<div class="flex w-full justify-center grow bg-[#fcfaf8] @container p-4 px-28 relative">
-								{#if athlete.photo}
-									<div
-										class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl max-h-40 w-full"
-										style="background-image: url({athlete.photo});"
-									></div>
-								{:else}
-									<div
-										class="flex justify-center w-full max-h-40 p-4 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600"
-									>
-										<svg
-											class="flex w-auto h-auto text-gray-400"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-											xmlns="http://www.w3.org/2000/svg"
-											><path
-												fill-rule="evenodd"
-												d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-												clip-rule="evenodd"
-											></path></svg
-										>
-									</div>
-								{/if}
-							</div>
-							{#if athlete.total_distance}
-								<div class="flex @container">
-									<div class="flex w-full flex-col gap-4 items-center">
-										<div class="flex gap-4 flex-row items-center">
-											{#if athlete.total_distance >= 1000}
-												<img src="medal_1k.png" alt="Icono" class="icon" width="50" height="50" />
-											{/if}
-											{#if athlete.total_distance >= 2000}
-												<img src="medal_2k.png" alt="Icono" class="icon" width="50" height="50" />
-											{/if}
-											{#if athlete.total_distance >= 5000}
-												<img src="medal_5k.png" alt="Icono" class="icon" width="50" height="50" />
-											{/if}
-											{#if athlete.total_distance >= 10000}
-												<img src="medal_10k.png" alt="Icono" class="icon" width="50" height="50" />
-											{/if}
-											{#if athlete.total_distance >= 20000}
-												<img src="medal_20k.png" alt="Icono" class="icon" width="50" height="50" />
-											{/if}
-										</div>
-									</div>
-								</div>
-							{/if}
-							<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
-								<div
-									class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
-									data-icon="Calendar"
-									data-size="18px"
-									data-weight="regular"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="18px"
-										height="18px"
-										fill="currentColor"
-										viewBox="0 0 256 256"
-									>
-										<path
-											d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-96-88v64a8,8,0,0,1-16,0V132.94l-4.42,2.22a8,8,0,0,1-7.16-14.32l16-8A8,8,0,0,1,112,120Zm59.16,30.45L152,176h16a8,8,0,0,1,0,16H136a8,8,0,0,1-6.4-12.8l28.78-38.37A8,8,0,1,0,145.07,132a8,8,0,1,1-13.85-8A24,24,0,0,1,176,136,23.76,23.76,0,0,1,171.16,150.45Z"
-										></path>
-									</svg>
-								</div>
-								<p
-									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
-								>
-									Miembro desde {convertDateToUTC(new Date(athlete.start_date)).toLocaleDateString(
-										'es-ES',
-										{ month: 'long', year: 'numeric' }
-									)}
-								</p>
-							</div>
-							<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
-								<div
-									class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
-									data-icon="Copy"
-									data-size="18px"
-									data-weight="regular"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="18px"
-										height="18px"
-										fill="currentColor"
-										viewBox="0 0 256 256"
-									>
-										<path
-											d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"
-										></path>
-									</svg>
-								</div>
-								<p
-									class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
-								>
-									{#if athlete.remaining_days >= 0}
-										Clases restantes: <b>{athlete.remaining_days}</b>
-									{:else}
-										Clases restantes: <b
-											>0 <span class="text-[#9c7849] text-base text-red-600"
-												>({athlete.remaining_days} extras)</span
-											></b
-										>
-									{/if}
-								</p>
-							</div>
-							{#if athlete.phone}
-								<div class="flex items-center gap-4 bg-[#fcfaf8] px-4 min-h-10">
-									<div
-										class="text-[#1c150d] flex items-center justify-center rounded-lg bg-[#f4eee7] shrink-0 size-8"
-										data-icon="Phone"
-										data-size="18px"
-										data-weight="regular"
-									>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="18px"
-											height="18px"
-											fill="currentColor"
-											viewBox="0 0 256 256"
-										>
-											<path
-												d="M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46ZM176,208A128.14,128.14,0,0,1,48,80,40.2,40.2,0,0,1,82.87,40a.61.61,0,0,0,0,.12l21,47L83.2,111.86a6.13,6.13,0,0,0-.57.77,16,16,0,0,0-1,15.7c9.06,18.53,27.73,37.06,46.46,46.11a16,16,0,0,0,15.75-1.14,8.44,8.44,0,0,0,.74-.56L168.89,152l47,21.05h0s.08,0,.11,0A40.21,40.21,0,0,1,176,208Z"
-											></path>
-										</svg>
-									</div>
-									<p
-										class="text-[#1c150d] text-base font-normal leading-normal flex-1 truncate text-left"
-									>
-										Telefóno: {athlete.phone}
-									</p>
-								</div>
-							{/if}
-							<div class="flex p-4 @container">
-								<div class="flex w-full flex-col gap-4 items-center">
-									<div class="flex gap-4 flex-col items-center">
-										<div class="flex flex-col items-center justify-center">
-											<img
-												id="barcode"
-												src="https://api.qrserver.com/v1/create-qr-code/?data={athlete.id}&amp;size=100x100"
-												alt=""
-												title="ID"
-												width="50"
-												height="50"
-											/>
-										</div>
-										<div class="flex flex-col items-center justify-center">
-											<button
-												class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-												on:click={onLogOut()}>Cerrar Sesión</button
-											>
-										</div>
-									</div>
+					<div class="nc-root" style="--skin-accent:{skin.accent};">
+						<!-- ── CLUB HEADER ── -->
+						<div class="nc-header" class:nc-header-dark={skin.isDark}>
+							<div class="nc-brand">
+								<div class="nc-logo" style="background-image: url('logo_512.png');"></div>
+								<div class="nc-brand-text">
+									<span class="nc-club-name">CORAL SWIMMER</span>
+									<span class="nc-club-id">ID: {athlete.identification}</span>
 								</div>
 							</div>
 						</div>
-					</div>
 
+						<!-- ── HERO: avatar + identity on gradient ── -->
+						<div class="nc-hero {skin.textureClass}" class:nc-hero-dark={skin.isDark} style="--skin-gradient:{skin.gradient}">
+							{#if athlete.photo}
+								<div class="nc-av" style="background-image: url({athlete.photo});"></div>
+							{:else}
+								<div class="nc-av nc-av-ph">
+									<svg width="36" height="36" fill="rgba(255,255,255,0.5)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+								</div>
+							{/if}
+							<p class="nc-name">{athlete.forename} {athlete.surname}</p>
+							{#if !athlete.expiration_date}
+								<span class="nc-validity nc-validity-exp">Membresía expirada</span>
+							{:else if expired(convertDateToUTC(new Date(athlete.expiration_date)))}
+								<span class="nc-validity nc-validity-exp">Expiró {convertDateToUTC(new Date(athlete.expiration_date)).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+							{:else}
+								<span class="nc-validity nc-validity-ok">Válido hasta {convertDateToUTC(new Date(athlete.expiration_date)).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+							{/if}
+							{#if athlete.total_distance}
+								<div class="nc-medals">
+									{#if athlete.total_distance >= 1000}<img src="medal_1k.png" alt="1k" width="22" height="22"/>{/if}
+									{#if athlete.total_distance >= 2000}<img src="medal_2k.png" alt="2k" width="22" height="22"/>{/if}
+									{#if athlete.total_distance >= 5000}<img src="medal_5k.png" alt="5k" width="22" height="22"/>{/if}
+									{#if athlete.total_distance >= 10000}<img src="medal_10k.png" alt="10k" width="22" height="22"/>{/if}
+									{#if athlete.total_distance >= 20000}<img src="medal_20k.png" alt="20k" width="22" height="22"/>{/if}
+								</div>
+							{/if}
+						</div>
+
+						<!-- ── WHITE PANEL: data rows + footer ── -->
+						<div class="nc-panel" class:nc-panel-tinted={skin.gradient !== 'linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)'}>
+							<div class="nc-rows">
+								<div class="nc-row">
+									<svg class="nc-row-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"/></svg>
+									<span class="nc-row-label">Miembro desde</span>
+									<span class="nc-row-val">{convertDateToUTC(new Date(athlete.start_date)).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+								</div>
+								<div class="nc-row">
+									<svg class="nc-row-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>
+									<span class="nc-row-label">Clases restantes</span>
+									<span class="nc-row-val">
+										{#if athlete.remaining_days >= 0}{athlete.remaining_days}{:else}0 <small class="text-red-500">({athlete.remaining_days} extras)</small>{/if}
+									</span>
+								</div>
+								{#if athlete.phone}
+									<div class="nc-row">
+										<svg class="nc-row-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 256 256"><path d="M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46Z"/></svg>
+										<span class="nc-row-label">Teléfono</span>
+										<span class="nc-row-val">{athlete.phone}</span>
+									</div>
+								{/if}
+							</div>
+							<div class="nc-foot">
+								<img
+									id="barcode"
+									src="https://api.qrserver.com/v1/create-qr-code/?data={athlete.id}&size=56x56"
+									alt="QR"
+									title="ID"
+									width="52"
+									height="52"
+									class="nc-qr"
+								/>
+								<button class="nc-logout" on:click={onLogOut()}>Cerrar Sesión</button>
+							</div>
+						</div>
+
+					</div>
+					<!-- Stickers ganados superpuestos sobre la cara frontal -->
+					{#if earnedStickers.length > 0}
+						<CardStickers stickers={earnedStickers} />
+					{/if}
 					<!-- Banner Teaser -->
 					{#if hasNewAchievements && athlete.tier !== 'standard'}
 						<button 
@@ -642,6 +575,7 @@
 						{isLoading}
 						allLevels={gamificationLevels}
 						{currentUserID}
+						{radarStats}
 						newBadges={recentAchievements}
 						showNewIndicators={isFlipped && recentAchievements.length > 0}
 						on:flip={() => (isFlipped = !isFlipped)}
@@ -658,6 +592,14 @@
 		onMarkAllRead={markAllRead}
 		onDelete={deleteNotification}
 		onClearAll={clearAllNotifications}
+	/>
+
+	<UnlockPopup
+		visible={showUnlockPopup}
+		message={currentUnlock?.msg ?? ''}
+		levelIcon={level?.icono ?? '🏆'}
+		levelName={level?.nombre ?? ''}
+		on:dismiss={dismissUnlockPopup}
 	/>
 {/if}
 
@@ -735,6 +677,310 @@
 		background-color: #e2e8f0;
 		border-radius: 24px;
 		border: 1px solid #cbd5e1;
+	}
+
+	/* ── New card design (nc-*) ── */
+	/* Base is WHITE. Skin/level system overrides nc-hero background. */
+
+	.nc-root {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		background: white;
+		--skin-accent: #4285f4;
+	}
+
+	.nc-header {
+		padding: 54px 20px 12px;
+		text-align: center;
+		background: white;
+		transition: background 0.4s;
+	}
+
+	.nc-header-dark {
+		background: color-mix(in srgb, var(--skin-accent) 18%, white);
+	}
+
+	.nc-header-dark .nc-club-name {
+		color: color-mix(in srgb, var(--skin-accent) 70%, #0f172a);
+	}
+
+	.nc-header-dark .nc-club-id {
+		color: color-mix(in srgb, var(--skin-accent) 50%, #64748b);
+	}
+
+	.nc-brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.nc-logo {
+		width: 52px;
+		height: 52px;
+		border-radius: 12px;
+		background-size: cover;
+		background-position: center;
+		flex-shrink: 0;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+	}
+
+	.nc-brand-text {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.25;
+		text-align: left;
+	}
+
+	.nc-club-name {
+		font-size: 17px;
+		font-weight: 800;
+		color: #0f172a;
+		letter-spacing: 0.3px;
+	}
+
+	.nc-club-id {
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	/* Hero — skin applies background via inline style; default is white */
+	.nc-hero {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 10px 16px 24px;
+		gap: 10px;
+		background: var(--skin-gradient, white);
+	}
+
+	.nc-av {
+		width: 130px;
+		height: 130px;
+		border-radius: 50%;
+		border: 4px solid white;
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
+		box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08), 0 6px 24px rgba(0, 0, 0, 0.18);
+	}
+
+	.nc-av-ph {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.07);
+	}
+
+	.nc-name {
+		margin: 0;
+		font-size: 22px;
+		font-weight: 700;
+		color: #0f172a;
+		letter-spacing: -0.3px;
+	}
+
+	/* Dark skin overrides */
+	.nc-hero-dark .nc-name {
+		color: white;
+		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+	}
+
+	.nc-validity {
+		display: inline-block;
+		padding: 5px 14px;
+		border-radius: 20px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.nc-validity-ok {
+		background: #e0f2fe;
+		color: #0369a1;
+		border: 1px solid #bae6fd;
+	}
+
+	.nc-hero-dark .nc-validity-ok {
+		background: rgba(255, 255, 255, 0.18);
+		color: white;
+		border: 1px solid rgba(255, 255, 255, 0.35);
+	}
+
+	.nc-validity-exp {
+		background: #fee2e2;
+		color: #dc2626;
+		border: 1px solid #fca5a5;
+	}
+
+	.nc-hero-dark .nc-validity-exp {
+		background: rgba(220, 38, 38, 0.35);
+		color: #fca5a5;
+		border: 1px solid rgba(220, 38, 38, 0.5);
+	}
+
+	.nc-medals {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 4px;
+	}
+
+	.nc-panel {
+		background: white;
+		border-radius: 20px 20px 0 0;
+		box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.07);
+		overflow: hidden;
+	}
+
+	.nc-panel-tinted .nc-row-icon {
+		color: var(--skin-accent);
+	}
+
+	.nc-panel-tinted .nc-foot {
+		background: color-mix(in srgb, var(--skin-accent) 8%, #f8fafc);
+		border-top: 1px solid color-mix(in srgb, var(--skin-accent) 20%, transparent);
+	}
+
+	.nc-panel-tinted .nc-logout {
+		background: linear-gradient(135deg, var(--skin-accent) 0%, color-mix(in srgb, var(--skin-accent) 70%, black) 100%);
+	}
+
+	.nc-rows {
+		padding: 6px 6px 0;
+	}
+
+	.nc-row {
+		display: flex;
+		align-items: center;
+		padding: 13px 16px;
+		gap: 11px;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+	}
+
+	.nc-row-icon {
+		flex-shrink: 0;
+		color: #0891b2;
+	}
+
+	.nc-row-label {
+		font-size: 13px;
+		color: #64748b;
+	}
+
+	.nc-row-val {
+		font-size: 14px;
+		font-weight: 600;
+		color: #0f172a;
+		margin-left: auto;
+		text-align: right;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 55%;
+	}
+
+	.nc-foot {
+		display: flex;
+		align-items: center;
+		padding: 10px 14px 16px;
+		gap: 12px;
+		border-top: 1px solid rgba(0, 0, 0, 0.07);
+		background: #f8fafc;
+	}
+
+	.nc-qr {
+		flex-shrink: 0;
+		border-radius: 6px;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+	}
+
+	.nc-logout {
+		flex: 1;
+		background: linear-gradient(135deg, #0369a1 0%, #0891b2 100%);
+		color: white;
+		font-size: 15px;
+		font-weight: 700;
+		border: none;
+		border-radius: 10px;
+		padding: 13px 16px;
+		cursor: pointer;
+		transition: opacity 0.15s;
+	}
+
+	.nc-logout:hover {
+		opacity: 0.9;
+	}
+
+	/* ── Textures (applied to nc-hero) ──
+	   Each texture class must include var(--skin-gradient) as the last background-image
+	   layer because background-image overrides the background shorthand set on .nc-hero.
+	*/
+
+	.texture-bubbles {
+		background-image:
+			radial-gradient(circle at 20% 30%, rgba(255,255,255,0.28) 0%, transparent 40%),
+			radial-gradient(circle at 75% 60%, rgba(255,255,255,0.22) 0%, transparent 35%),
+			radial-gradient(circle at 50% 85%, rgba(255,255,255,0.2) 0%, transparent 30%),
+			radial-gradient(circle at 85% 18%, rgba(255,255,255,0.18) 0%, transparent 25%),
+			radial-gradient(circle at 10% 72%, rgba(255,255,255,0.22) 0%, transparent 28%),
+			var(--skin-gradient, white);
+	}
+
+	.texture-waves {
+		background-image:
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='20' viewBox='0 0 100 20'%3E%3Cpath d='M0 10 Q25 0 50 10 Q75 20 100 10' stroke='rgba(255,255,255,0.25)' stroke-width='2' fill='none'/%3E%3C/svg%3E"),
+			var(--skin-gradient, white);
+		background-size: 100px 20px, auto;
+		background-repeat: repeat, no-repeat;
+	}
+
+	.texture-deep-water {
+		background-image:
+			linear-gradient(180deg, rgba(255,255,255,0.09) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+			var(--skin-gradient, white);
+		background-size: 30px 30px, 30px 30px, auto;
+	}
+
+	.texture-mesh {
+		background-image:
+			linear-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(0,0,0,0.07) 1px, transparent 1px),
+			var(--skin-gradient, white);
+		background-size: 20px 20px, 20px 20px, auto;
+	}
+
+	.texture-speed-lines {
+		background-image:
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 8px,
+				rgba(255,255,255,0.1) 8px,
+				rgba(255,255,255,0.1) 9px
+			),
+			var(--skin-gradient, white);
+	}
+
+	.texture-carbon {
+		background-image:
+			repeating-linear-gradient(
+				45deg,
+				transparent,
+				transparent 3px,
+				rgba(255,255,255,0.12) 3px,
+				rgba(255,255,255,0.12) 4px
+			),
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 3px,
+				rgba(255,255,255,0.12) 3px,
+				rgba(255,255,255,0.12) 4px
+			),
+			var(--skin-gradient, white);
 	}
 
 	/* Botón campana – espejo del flip-btn, en la esquina opuesta */
