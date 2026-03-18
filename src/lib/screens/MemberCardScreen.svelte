@@ -1091,17 +1091,13 @@
 	   layer because background-image overrides the background shorthand set on .nc-hero.
 	*/
 
-	/* Sunny / Kids 1-2: multiple bubble halos of varying size */
+	/* Sunny / Kids 1-2: real bubble circles with outline + inner glint */
 	.texture-bubbles {
 		background-image:
-			radial-gradient(circle at 15% 22%, rgba(255,255,255,0.55) 0%, transparent 14%),
-			radial-gradient(circle at 82% 52%, rgba(255,255,255,0.45) 0%, transparent 12%),
-			radial-gradient(circle at 47% 82%, rgba(255,255,255,0.5) 0%, transparent 16%),
-			radial-gradient(circle at 90% 14%, rgba(255,255,255,0.4) 0%, transparent 9%),
-			radial-gradient(circle at 6%  68%, rgba(255,255,255,0.45) 0%, transparent 11%),
-			radial-gradient(circle at 58% 18%, rgba(255,255,255,0.35) 0%, transparent 7%),
-			radial-gradient(circle at 34% 50%, rgba(255,255,255,0.25) 0%, transparent 20%),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Ccircle cx='22' cy='32' r='10' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.7)' stroke-width='2'/%3E%3Ccircle cx='19' cy='27' r='3' fill='rgba(255,255,255,0.6)'/%3E%3Ccircle cx='88' cy='62' r='15' fill='rgba(255,255,255,0.1)' stroke='rgba(255,255,255,0.55)' stroke-width='2'/%3E%3Ccircle cx='84' cy='56' r='4' fill='rgba(255,255,255,0.45)'/%3E%3Ccircle cx='52' cy='97' r='8' fill='rgba(255,255,255,0.1)' stroke='rgba(255,255,255,0.6)' stroke-width='1.5'/%3E%3Ccircle cx='50' cy='93' r='2' fill='rgba(255,255,255,0.5)'/%3E%3Ccircle cx='98' cy='17' r='5' fill='rgba(255,255,255,0.1)' stroke='rgba(255,255,255,0.5)' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='72' r='12' fill='rgba(255,255,255,0.1)' stroke='rgba(255,255,255,0.5)' stroke-width='1.8'/%3E%3Ccircle cx='5' cy='67' r='3' fill='rgba(255,255,255,0.42)'/%3E%3Ccircle cx='62' cy='12' r='4' fill='rgba(255,255,255,0.55)' stroke='rgba(255,255,255,0.7)' stroke-width='1'/%3E%3C/svg%3E"),
 			var(--skin-gradient, white);
+		background-size: 120px 120px, auto;
+		background-repeat: repeat, no-repeat;
 	}
 
 	/* Reef / Cobalto: double wave layer — wide slow + narrow fast */
@@ -1177,26 +1173,28 @@
 			var(--skin-gradient, white);
 	}
 
-	/* Hi-Tech custom skin: visible cyan dot grid + center glow */
-	.texture-dots {
+	/* Hi-Tech custom skin: hexagonal honeycomb grid + glow */
+	.texture-hitech {
+		background-color: #F0F9FF;
 		background-image:
-			radial-gradient(circle at 50% 45%, rgba(0,200,255,0.18) 0%, transparent 65%),
-			radial-gradient(rgba(0,200,255,0.85) 1px, transparent 1px),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='32'%3E%3Cpath d='M28,2 L40,9 L40,23 L28,30 L16,23 L16,9 Z' fill='rgba(0,180,255,0.04)' stroke='rgba(0,100,180,0.45)' stroke-width='1'/%3E%3C/svg%3E"),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='32'%3E%3Cpath d='M28,2 L40,9 L40,23 L28,30 L16,23 L16,9 Z' fill='rgba(0,180,255,0.04)' stroke='rgba(0,100,180,0.45)' stroke-width='1'/%3E%3C/svg%3E"),
+			radial-gradient(ellipse at 50% 30%, rgba(0,180,255,0.22) 0%, transparent 60%),
 			var(--skin-gradient, white);
-		background-size: auto, 20px 20px, auto;
+		background-size: 56px 32px, 56px 32px, auto, auto;
+		background-position: 0 0, 28px 16px, 0 0, 0 0;
+		background-repeat: repeat, repeat, no-repeat, no-repeat;
 	}
 
-	/* Vortex: concentric rings + central cyan glow */
+	/* Vortex: perspective whirlpool — tilted ellipses converging to a glowing core */
 	.texture-vortex {
 		background-image:
-			repeating-radial-gradient(circle at 50% 50%,
-				transparent 0px, transparent 16px,
-				rgba(0,200,255,0.28) 17px, rgba(0,200,255,0.28) 19px,
-				transparent 20px, transparent 34px,
-				rgba(0,200,255,0.18) 35px, rgba(0,200,255,0.18) 37px
-			),
-			radial-gradient(circle at 50% 50%, rgba(0,200,255,0.35) 0%, transparent 55%),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cellipse cx='100' cy='100' rx='88' ry='34' fill='none' stroke='rgba(0,200,255,0.35)' stroke-width='1.5' transform='rotate(-15 100 100)'/%3E%3Cellipse cx='100' cy='100' rx='70' ry='27' fill='none' stroke='rgba(0,200,255,0.45)' stroke-width='1.5' transform='rotate(-10 100 100)'/%3E%3Cellipse cx='100' cy='100' rx='53' ry='21' fill='none' stroke='rgba(0,200,255,0.56)' stroke-width='1.5' transform='rotate(-5 100 100)'/%3E%3Cellipse cx='100' cy='100' rx='37' ry='15' fill='none' stroke='rgba(0,200,255,0.68)' stroke-width='2'/%3E%3Cellipse cx='100' cy='100' rx='22' ry='9' fill='none' stroke='rgba(0,210,255,0.8)' stroke-width='2'/%3E%3Cellipse cx='100' cy='100' rx='10' ry='4' fill='none' stroke='rgba(0,220,255,0.9)' stroke-width='2'/%3E%3Ccircle cx='100' cy='100' r='3' fill='rgba(0,235,255,0.95)'/%3E%3C/svg%3E"),
+			radial-gradient(circle at 50% 50%, rgba(0,200,255,0.3) 0%, transparent 50%),
 			var(--skin-gradient, black);
+		background-size: cover, auto, auto;
+		background-position: center, 0 0, 0 0;
+		background-repeat: no-repeat, no-repeat, no-repeat;
 		box-shadow: inset 0 0 0 1.5px rgba(0,200,255,0.7), inset 0 0 30px rgba(0,86,145,0.5);
 	}
 
@@ -1224,6 +1222,29 @@
 			radial-gradient(ellipse at 15% 90%, rgba(0,86,145,0.45) 0%, transparent 38%),
 			var(--skin-gradient, black);
 		box-shadow: inset 0 0 60px rgba(0,20,60,0.9), inset 0 0 0 1px rgba(0,200,255,0.15);
+	}
+
+	/* Océano: fish-scale / mermaid-scale scallop arches — bright shallow water */
+	.texture-ocean {
+		background-image:
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='25'%3E%3Cpath d='M0,25 Q25,-4 50,25' fill='none' stroke='rgba(255,255,255,0.52)' stroke-width='2'/%3E%3C/svg%3E"),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='25'%3E%3Cpath d='M0,25 Q25,-4 50,25' fill='none' stroke='rgba(255,255,255,0.28)' stroke-width='1.2'/%3E%3C/svg%3E"),
+			linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 38%),
+			var(--skin-gradient, white);
+		background-size: 50px 25px, 50px 25px, auto, auto;
+		background-position: 0 0, 25px 12px, 0 0, 0 0;
+		background-repeat: repeat, repeat, no-repeat, no-repeat;
+	}
+
+	/* Medianoche: bioluminescent particles floating in the deep */
+	.texture-midnight {
+		background-image:
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='15' cy='22' r='1.5' fill='rgba(0,200,255,0.8)'/%3E%3Ccircle cx='45' cy='8' r='1' fill='rgba(0,200,255,0.65)'/%3E%3Ccircle cx='78' cy='38' r='2' fill='rgba(0,210,255,0.75)'/%3E%3Ccircle cx='92' cy='73' r='1' fill='rgba(100,220,255,0.6)'/%3E%3Ccircle cx='33' cy='62' r='1.5' fill='rgba(0,200,255,0.7)'/%3E%3Ccircle cx='65' cy='52' r='1' fill='rgba(0,200,255,0.65)'/%3E%3Ccircle cx='8' cy='88' r='1.5' fill='rgba(0,170,220,0.75)'/%3E%3Ccircle cx='55' cy='84' r='1' fill='rgba(0,200,255,0.55)'/%3E%3Ccircle cx='88' cy='12' r='1.5' fill='rgba(0,200,255,0.7)'/%3E%3Ccircle cx='28' cy='95' r='1' fill='rgba(100,220,255,0.5)'/%3E%3Ccircle cx='72' cy='28' r='1' fill='rgba(0,200,255,0.6)'/%3E%3C/svg%3E"),
+			repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,100,200,0.1) 40px, rgba(0,100,200,0.1) 41px),
+			radial-gradient(ellipse at 60% 40%, rgba(0,80,160,0.35) 0%, transparent 55%),
+			var(--skin-gradient, white);
+		background-size: 100px 100px, auto, auto, auto;
+		background-repeat: repeat, repeat, no-repeat, no-repeat;
 	}
 
 	/* Botón campana – espejo del flip-btn, en la esquina opuesta */

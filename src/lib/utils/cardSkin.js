@@ -85,11 +85,11 @@ const SKIN_CATALOG = {
 	// Kids plan — bright, playful
 	skin_kids_sunny:     { label: 'Soleado',    gradient: 'radial-gradient(circle at top right, #6EE7FF, #00C8FF)', textureClass: 'texture-bubbles',    isDark: false, plan: null, accent: '#00C8FF' },
 	skin_kids_reef:      { label: 'Arrecife',   gradient: 'linear-gradient(135deg, #00D2FF 0%, #3a7bd5 100%)',      textureClass: 'texture-waves',      isDark: true,  plan: null, accent: '#00D2FF' },
-	skin_kids_ocean:     { label: 'Océano',     gradient: 'linear-gradient(180deg, #0094FF 0%, #005691 100%)',      textureClass: 'texture-deep-water', isDark: true,  plan: null, accent: '#0094FF' },
+	skin_kids_ocean:     { label: 'Océano',     gradient: 'linear-gradient(180deg, #0094FF 0%, #005691 100%)',      textureClass: 'texture-ocean',    isDark: true,  plan: null, accent: '#0094FF' },
 	// Adults plan — technical, professional
-	skin_adults_clean:   { label: 'Hi-Tech',    gradient: '#F0F9FF',                                                 textureClass: 'texture-dots',       isDark: false, plan: null, accent: '#00C8FF' },
-	skin_adults_marea:   { label: 'Cobalto',    gradient: 'linear-gradient(135deg, #005691 0%, #002D4D 100%)',      textureClass: 'texture-waves',      isDark: true,  plan: null, accent: '#00C8FF' },
-	skin_adults_deep:    { label: 'Medianoche', gradient: 'linear-gradient(180deg, #002D4D 0%, #001529 100%)',      textureClass: 'texture-deep-water', isDark: true,  plan: null, accent: '#3a7bd5' },
+	skin_adults_clean:   { label: 'Hi-Tech',    gradient: 'linear-gradient(160deg, #E8F8FF 0%, #F0F9FF 50%, #D6F0FF 100%)',  textureClass: 'texture-hitech',   isDark: false, plan: null, accent: '#00C8FF' },
+	skin_adults_marea:   { label: 'Cobalto',    gradient: 'linear-gradient(135deg, #005691 0%, #002D4D 100%)',      textureClass: 'texture-waves',    isDark: true,  plan: null, accent: '#00C8FF' },
+	skin_adults_deep:    { label: 'Medianoche', gradient: 'linear-gradient(180deg, #002D4D 0%, #001529 100%)',      textureClass: 'texture-midnight', isDark: true,  plan: null, accent: '#3a7bd5' },
 	// Élite — max contrast
 	skin_adults_vortex:  { label: 'Vórtex',    gradient: 'radial-gradient(circle, #005691 0%, #000814 100%)',      textureClass: 'texture-vortex',     isDark: true,  plan: null, accent: '#00C8FF' },
 	skin_adults_abyssal: { label: 'Abismo',     gradient: 'linear-gradient(135deg, #000814 0%, #050505 100%)',      textureClass: 'texture-abyssal',    isDark: true,  plan: null, accent: '#005691' },
