@@ -10,6 +10,10 @@
 
 	let dragging = null;
 	let dragTop = 0, dragLeft = 0;
+	let pendingX = 0, pendingY = 0;
+	let rafId = null;
+
+	function blockScroll(e) { e.preventDefault(); }
 
 	function onPointerDown(e, sticker) {
 		if (!isEditMode) return;
@@ -21,20 +25,30 @@
 			origTop: sticker.top, origLeft: sticker.left, cardW: width, cardH: height };
 		dragTop  = sticker.top;
 		dragLeft = sticker.left;
+		window.addEventListener('touchmove', blockScroll, { passive: false });
+	}
+
+	function applyMove() {
+		rafId = null;
+		if (!dragging) return;
+		dragTop  = Math.max(5,  Math.min(60, dragging.origTop  + (pendingY / dragging.cardH * 100)));
+		dragLeft = Math.max(-8, Math.min(82, dragging.origLeft + (pendingX / dragging.cardW * 100)));
 	}
 
 	function onPointerMove(e) {
 		if (!dragging) return;
-		const dx = e.clientX - dragging.startX;
-		const dy = e.clientY - dragging.startY;
-		dragTop  = Math.max(5,  Math.min(60, dragging.origTop  + (dy / dragging.cardH * 100)));
-		dragLeft = Math.max(-8, Math.min(82, dragging.origLeft + (dx / dragging.cardW * 100)));
+		e.preventDefault();
+		pendingX = e.clientX - dragging.startX;
+		pendingY = e.clientY - dragging.startY;
+		if (!rafId) rafId = requestAnimationFrame(applyMove);
 	}
 
-	function onPointerUp() {
+	function finishDrag() {
 		if (!dragging) return;
+		if (rafId) { cancelAnimationFrame(rafId); rafId = null; applyMove(); }
 		dispatch('move', { id: dragging.id, top: dragTop, left: dragLeft });
 		dragging = null;
+		window.removeEventListener('touchmove', blockScroll);
 	}
 </script>
 
@@ -50,8 +64,9 @@
 		class:sticker-dragging={dragging?.id === sticker.id}
 		style="top: {dragging?.id === sticker.id ? dragTop : sticker.top}%; left: {dragging?.id === sticker.id ? dragLeft : sticker.left}%; transform: rotate({sticker.rotate ?? 0}deg);"
 		on:pointerdown={(e) => onPointerDown(e, sticker)}
-		on:pointermove={onPointerMove}
-		on:pointerup={onPointerUp}
+		on:pointermove|nonpassive={onPointerMove}
+		on:pointerup={finishDrag}
+		on:pointercancel={finishDrag}
 		on:error={(e) => { e.currentTarget.style.display = 'none'; }}
 	/>
 {/each}
