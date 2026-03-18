@@ -76,3 +76,39 @@ const DEFAULT_SKIN = {
 	plan: null,
 	accent: '#4285f4'
 };
+
+/**
+ * Catalog of unlockable skins keyed by reward ID from the gamification config.
+ * Each entry matches the shape returned by getCardSkin().
+ */
+const SKIN_CATALOG = {
+	// Kids plan — bright, playful
+	skin_kids_sunny:     { label: 'Soleado',    gradient: 'radial-gradient(circle at top right, #6EE7FF, #00C8FF)', textureClass: 'texture-bubbles',    isDark: false, plan: null, accent: '#00C8FF' },
+	skin_kids_reef:      { label: 'Arrecife',   gradient: 'linear-gradient(135deg, #00D2FF 0%, #3a7bd5 100%)',      textureClass: 'texture-waves',      isDark: true,  plan: null, accent: '#00D2FF' },
+	skin_kids_ocean:     { label: 'Océano',     gradient: 'linear-gradient(180deg, #0094FF 0%, #005691 100%)',      textureClass: 'texture-deep-water', isDark: true,  plan: null, accent: '#0094FF' },
+	// Adults plan — technical, professional
+	skin_adults_clean:   { label: 'Hi-Tech',    gradient: '#F0F9FF',                                                 textureClass: 'texture-dots',       isDark: false, plan: null, accent: '#00C8FF' },
+	skin_adults_marea:   { label: 'Cobalto',    gradient: 'linear-gradient(135deg, #005691 0%, #002D4D 100%)',      textureClass: 'texture-waves',      isDark: true,  plan: null, accent: '#00C8FF' },
+	skin_adults_deep:    { label: 'Medianoche', gradient: 'linear-gradient(180deg, #002D4D 0%, #001529 100%)',      textureClass: 'texture-deep-water', isDark: true,  plan: null, accent: '#3a7bd5' },
+	// Élite — max contrast
+	skin_adults_vortex:  { label: 'Vórtex',    gradient: 'radial-gradient(circle, #005691 0%, #000814 100%)',      textureClass: 'texture-vortex',     isDark: true,  plan: null, accent: '#00C8FF' },
+	skin_adults_abyssal: { label: 'Abismo',     gradient: 'linear-gradient(135deg, #000814 0%, #050505 100%)',      textureClass: 'texture-abyssal',    isDark: true,  plan: null, accent: '#005691' },
+};
+
+/**
+ * Returns a skin configuration by reward ID, or null if not found.
+ * @param {string} skinId
+ * @returns {{ gradient: string, textureClass: string, isDark: boolean, plan: null, accent: string }|null}
+ */
+export function getSkinById(skinId) {
+	const s = SKIN_CATALOG[skinId];
+	return s ?? null;
+}
+
+/**
+ * Returns all unlockable skins as an array for use in the skin picker UI.
+ * @returns {{ id: string, label: string, gradient: string, isDark: boolean, accent: string }[]}
+ */
+export function getAllSkins() {
+	return Object.entries(SKIN_CATALOG).map(([id, s]) => ({ id, ...s }));
+}

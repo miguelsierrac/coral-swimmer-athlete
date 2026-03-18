@@ -11,7 +11,7 @@
 		trackNotificationDismissed,
 		trackNotificationClearedAll
 	} from '$lib/infrastructure/AnalyticsService.js';
-	import { getCardSkin } from '$lib/utils/cardSkin.js';
+	import { getCardSkin, getSkinById, getAllSkins } from '$lib/utils/cardSkin.js';
 	import CardStickers from '$lib/components/CardStickers.svelte';
 
 	// Fixed slots on the hero zone (top/left as % of card-face)
@@ -48,6 +48,10 @@
 	let activeStickerIds = null;
 	// custom positions per fileId: { [fileId]: { top: number, left: number } }
 	let stickerPositions = {};
+	// custom skin ID chosen by the user (null = use level default)
+	let customSkinId = null;
+	// all available skin swatches for the picker (constant — catalog never changes at runtime)
+	const SKINS_LIST = getAllSkins();
 
 	// Initialise once athlete + completedBadges are ready
 	$: if (athlete?.id && completedBadges && activeStickerIds === null) {
@@ -59,6 +63,7 @@
 			activeStickerIds = allEarnedStickerFiles;
 		}
 		if (saved?.positions) stickerPositions = saved.positions;
+		if (saved?.skinId) customSkinId = saved.skinId;
 	}
 
 	function toggleEditMode() {
@@ -71,12 +76,17 @@
 		} else {
 			activeStickerIds = [...activeStickerIds, fileId];
 		}
-		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
 	}
 
 	function moveStickerPosition(id, top, left) {
 		stickerPositions = { ...stickerPositions, [id]: { top, left } };
-		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions });
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
+	}
+
+	function selectSkin(skinId) {
+		customSkinId = skinId === 'default' ? null : skinId;
+		saveCustom(athlete.id, { stickers: activeStickerIds, positions: stickerPositions, skinId: customSkinId });
 	}
 
 	export let athlete;
@@ -89,7 +99,8 @@
 	export let currentUserID;
 	export let gamificationProgress = null;
 
-	$: skin = getCardSkin(level?.id ?? null);
+	$: levelSkin = getCardSkin(level?.id ?? null);
+	$: skin = customSkinId ? (getSkinById(customSkinId) ?? levelSkin) : levelSkin;
 
 	// Build radar stats by accumulating radar_stats from every completed objective across all levels
 	$: radarStats = (() => {
@@ -212,6 +223,16 @@
 			if (seen.has(file)) continue;
 			seen.add(file);
 			result.push(file);
+		}
+		return result;
+	})();
+
+	// All unique skin IDs the user has earned
+	$: allEarnedSkinIds = (() => {
+		const result = [];
+		for (const badge of completedBadges) {
+			const r = badge.meta_game?.reward;
+			if (r?.tipo === 'fondo' && !result.includes(r.id)) result.push(r.id);
 		}
 		return result;
 	})();
@@ -642,6 +663,37 @@
 								</div>
 								<p class="edit-hint">{(activeStickerIds ?? []).length}/{STICKER_SLOTS.length} activos</p>
 							</section>
+
+							<section class="edit-section">
+								<h4 class="edit-section-title">🎨 Fondo</h4>
+								<div class="skin-grid">
+									<!-- Default = level skin, always available -->
+									<button
+										class="skin-swatch"
+										class:skin-swatch-active={!customSkinId}
+										on:click={() => selectSkin('default')}
+										title="Original"
+									>
+										<span class="skin-preview" style="background:{levelSkin.gradient}"></span>
+										<span class="skin-label">Original</span>
+									</button>
+									{#each SKINS_LIST as sk}
+										{@const unlocked = allEarnedSkinIds.includes(sk.id)}
+										<button
+											class="skin-swatch"
+											class:skin-swatch-active={customSkinId === sk.id}
+											class:skin-swatch-locked={!unlocked}
+											disabled={!unlocked}
+											on:click={() => unlocked && selectSkin(sk.id)}
+											title={unlocked ? sk.label : '🔒 Bloqueado'}
+										>
+											<span class="skin-preview" style="background:{sk.gradient}"></span>
+											{#if !unlocked}<span class="skin-lock">🔒</span>{/if}
+											<span class="skin-label">{sk.label}</span>
+										</button>
+									{/each}
+								</div>
+							</section>
 						</div>
 					{/if}
 					<!-- Banner Teaser -->
@@ -1039,69 +1091,139 @@
 	   layer because background-image overrides the background shorthand set on .nc-hero.
 	*/
 
+	/* Sunny / Kids 1-2: multiple bubble halos of varying size */
 	.texture-bubbles {
 		background-image:
-			radial-gradient(circle at 20% 30%, rgba(255,255,255,0.28) 0%, transparent 40%),
-			radial-gradient(circle at 75% 60%, rgba(255,255,255,0.22) 0%, transparent 35%),
-			radial-gradient(circle at 50% 85%, rgba(255,255,255,0.2) 0%, transparent 30%),
-			radial-gradient(circle at 85% 18%, rgba(255,255,255,0.18) 0%, transparent 25%),
-			radial-gradient(circle at 10% 72%, rgba(255,255,255,0.22) 0%, transparent 28%),
+			radial-gradient(circle at 15% 22%, rgba(255,255,255,0.55) 0%, transparent 14%),
+			radial-gradient(circle at 82% 52%, rgba(255,255,255,0.45) 0%, transparent 12%),
+			radial-gradient(circle at 47% 82%, rgba(255,255,255,0.5) 0%, transparent 16%),
+			radial-gradient(circle at 90% 14%, rgba(255,255,255,0.4) 0%, transparent 9%),
+			radial-gradient(circle at 6%  68%, rgba(255,255,255,0.45) 0%, transparent 11%),
+			radial-gradient(circle at 58% 18%, rgba(255,255,255,0.35) 0%, transparent 7%),
+			radial-gradient(circle at 34% 50%, rgba(255,255,255,0.25) 0%, transparent 20%),
 			var(--skin-gradient, white);
 	}
 
+	/* Reef / Cobalto: double wave layer — wide slow + narrow fast */
 	.texture-waves {
 		background-image:
-			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='20' viewBox='0 0 100 20'%3E%3Cpath d='M0 10 Q25 0 50 10 Q75 20 100 10' stroke='rgba(255,255,255,0.25)' stroke-width='2' fill='none'/%3E%3C/svg%3E"),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='18' viewBox='0 0 120 18'%3E%3Cpath d='M0 9 Q30 0 60 9 Q90 18 120 9' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='11' viewBox='0 0 70 11'%3E%3Cpath d='M0 5.5 Q17.5 0 35 5.5 Q52.5 11 70 5.5' stroke='rgba(255,255,255,0.22)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"),
 			var(--skin-gradient, white);
-		background-size: 100px 20px, auto;
-		background-repeat: repeat, no-repeat;
+		background-size: 120px 18px, 70px 11px, auto;
+		background-repeat: repeat, repeat, no-repeat;
 	}
 
+	/* Ocean / Midnight: grid + diagonal light rays from surface */
 	.texture-deep-water {
 		background-image:
-			linear-gradient(180deg, rgba(255,255,255,0.09) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+			linear-gradient(168deg, rgba(255,255,255,0.22) 0%, transparent 38%),
+			linear-gradient(182deg, rgba(255,255,255,0.14) 0%, transparent 32%),
+			linear-gradient(173deg, rgba(255,255,255,0.1) 0%, transparent 28%),
+			linear-gradient(180deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+			linear-gradient(90deg,  rgba(255,255,255,0.04) 1px, transparent 1px),
 			var(--skin-gradient, white);
-		background-size: 30px 30px, 30px 30px, auto;
+		background-size: auto, auto, auto, 32px 32px, 32px 32px, auto;
 	}
 
+	/* Hi-Tech (level default): subtle grid for light backgrounds */
 	.texture-mesh {
 		background-image:
-			linear-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(0,0,0,0.07) 1px, transparent 1px),
+			radial-gradient(circle at 50% 0%, rgba(0,200,255,0.12) 0%, transparent 60%),
+			linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px),
 			var(--skin-gradient, white);
-		background-size: 20px 20px, 20px 20px, auto;
+		background-size: auto, 20px 20px, 20px 20px, auto;
 	}
 
+	/* Speed lines (level default adults intermediate) */
 	.texture-speed-lines {
 		background-image:
 			repeating-linear-gradient(
-				-45deg,
+				-48deg,
 				transparent,
-				transparent 8px,
-				rgba(255,255,255,0.1) 8px,
-				rgba(255,255,255,0.1) 9px
+				transparent 10px,
+				rgba(255,255,255,0.14) 10px,
+				rgba(255,255,255,0.14) 11px
+			),
+			repeating-linear-gradient(
+				-48deg,
+				transparent,
+				transparent 22px,
+				rgba(255,255,255,0.08) 22px,
+				rgba(255,255,255,0.08) 24px
 			),
 			var(--skin-gradient, white);
 	}
 
+	/* Carbon (level default elite) */
 	.texture-carbon {
 		background-image:
 			repeating-linear-gradient(
 				45deg,
 				transparent,
-				transparent 3px,
-				rgba(255,255,255,0.12) 3px,
-				rgba(255,255,255,0.12) 4px
+				transparent 4px,
+				rgba(255,255,255,0.14) 4px,
+				rgba(255,255,255,0.14) 5px
 			),
 			repeating-linear-gradient(
 				-45deg,
 				transparent,
-				transparent 3px,
-				rgba(255,255,255,0.12) 3px,
-				rgba(255,255,255,0.12) 4px
+				transparent 4px,
+				rgba(255,255,255,0.14) 4px,
+				rgba(255,255,255,0.14) 5px
 			),
+			radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.35) 0%, transparent 65%),
 			var(--skin-gradient, white);
+	}
+
+	/* Hi-Tech custom skin: visible cyan dot grid + center glow */
+	.texture-dots {
+		background-image:
+			radial-gradient(circle at 50% 45%, rgba(0,200,255,0.18) 0%, transparent 65%),
+			radial-gradient(rgba(0,200,255,0.85) 1px, transparent 1px),
+			var(--skin-gradient, white);
+		background-size: auto, 20px 20px, auto;
+	}
+
+	/* Vortex: concentric rings + central cyan glow */
+	.texture-vortex {
+		background-image:
+			repeating-radial-gradient(circle at 50% 50%,
+				transparent 0px, transparent 16px,
+				rgba(0,200,255,0.28) 17px, rgba(0,200,255,0.28) 19px,
+				transparent 20px, transparent 34px,
+				rgba(0,200,255,0.18) 35px, rgba(0,200,255,0.18) 37px
+			),
+			radial-gradient(circle at 50% 50%, rgba(0,200,255,0.35) 0%, transparent 55%),
+			var(--skin-gradient, black);
+		box-shadow: inset 0 0 0 1.5px rgba(0,200,255,0.7), inset 0 0 30px rgba(0,86,145,0.5);
+	}
+
+	/* Abyssal: metallic blue shimmer bands — "Final Boss" */
+	.texture-abyssal {
+		background-image:
+			/* primary diagonal metallic highlight */
+			linear-gradient(118deg,
+				transparent 28%,
+				rgba(0,86,145,0.55) 44%,
+				rgba(0,200,255,0.3) 50%,
+				rgba(0,86,145,0.55) 56%,
+				transparent 72%
+			),
+			/* secondary offset band */
+			linear-gradient(62deg,
+				transparent 15%,
+				rgba(0,86,145,0.35) 38%,
+				rgba(0,150,200,0.2) 48%,
+				transparent 68%
+			),
+			/* top-right corner glow */
+			radial-gradient(ellipse at 85% 10%, rgba(0,200,255,0.25) 0%, transparent 40%),
+			/* bottom-left corner depth */
+			radial-gradient(ellipse at 15% 90%, rgba(0,86,145,0.45) 0%, transparent 38%),
+			var(--skin-gradient, black);
+		box-shadow: inset 0 0 60px rgba(0,20,60,0.9), inset 0 0 0 1px rgba(0,200,255,0.15);
 	}
 
 	/* Botón campana – espejo del flip-btn, en la esquina opuesta */
@@ -1315,6 +1437,59 @@
 		font-size: 11px;
 		color: #94a3b8;
 		margin: 6px 0 0;
+	}
+
+	.skin-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.skin-swatch {
+		position: relative;
+		width: 56px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+		border: 2px solid transparent;
+		border-radius: 10px;
+		background: none;
+		cursor: pointer;
+		padding: 2px;
+		transition: border-color 0.15s, transform 0.15s, opacity 0.15s;
+	}
+	.skin-preview {
+		display: block;
+		width: 48px;
+		height: 34px;
+		border-radius: 7px;
+		border: 1.5px solid rgba(0,0,0,0.08);
+	}
+	.skin-swatch-active {
+		border-color: var(--primary-blue);
+		transform: scale(1.06);
+	}
+	.skin-swatch-locked {
+		opacity: 0.38;
+		cursor: not-allowed;
+	}
+	.skin-label {
+		font-size: 9px;
+		font-weight: 500;
+		color: #64748b;
+		line-height: 1;
+		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 52px;
+	}
+	.skin-lock {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		font-size: 9px;
+		line-height: 1;
 	}
 
 
