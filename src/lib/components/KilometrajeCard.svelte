@@ -3,7 +3,7 @@
 
 	/** @type {'standard'|'kids'|'health'|'performance'} */
 	export let tier = 'standard';
-	/** Processed chart data: [{ label, distance, height, active }] */
+	/** Raw chart data: [{ label, oficial, pendiente, active }] */
 	export let chartData = [];
 	export let totalDistance = null;
 	export let monthlyRecord = null;
@@ -14,6 +14,33 @@
 
 	let chartTab = 'all'; // 'all' | 'official' | 'bitacora'
 	let showBitacoraModal = false;
+
+	// Compute per-day distance and bar heights based on active tab
+	$: displayData = (() => {
+		const days = chartData.map((d) => {
+			let distance;
+			let isBitacora = false;
+			if (chartTab === 'official') {
+				distance = d.oficial ?? 0;
+			} else if (chartTab === 'bitacora') {
+				distance = d.pendiente ?? 0;
+				isBitacora = true;
+			} else {
+				// Prioridad oficial: si hay metros oficiales se muestran, si no los de bitácora
+				const oficial = d.oficial ?? 0;
+				const pendiente = d.pendiente ?? 0;
+				if (oficial > 0) {
+					distance = oficial;
+				} else {
+					distance = pendiente;
+					isBitacora = pendiente > 0;
+				}
+			}
+			return { ...d, distance, isBitacora };
+		});
+		const max = Math.max(...days.map((d) => d.distance), 0);
+		return days.map((d) => ({ ...d, height: max > 0 ? (d.distance / max) * 100 : 0 }));
+	})();
 </script>
 
 <div class="km-card">
@@ -103,15 +130,21 @@
 	<!-- Bar chart -->
 	<div class="chart-section">
 		<div class="bar-chart">
-			{#each chartData as day}
-				<div class="bar-group">
-					{#if day.distance > 0}
-						<span class="bar-value">{(day.distance / 1000).toFixed(1)}k</span>
-					{/if}
-					<div class="bar" class:active={day.active} style="height: {day.height}%;" />
-					<span class="bar-label">{day.label}</span>
-				</div>
-			{/each}
+			{#each displayData as day}
+					<div class="bar-group">
+						{#if day.distance > 0}
+							<span class="bar-value">{(day.distance / 1000).toFixed(1)}k</span>
+						{/if}
+						<div
+							class="bar"
+							class:bar--bitacora={day.isBitacora}
+							class:bar--oficial={!day.isBitacora && day.distance > 0}
+						class:active={day.active && !day.isBitacora}
+							style="height: {day.height}%;"
+						/>
+						<span class="bar-label">{day.label}</span>
+					</div>
+				{/each}
 		</div>
 		{#if chartTab !== 'all'}
 			<p class="chart-filter-hint">
@@ -343,8 +376,12 @@
 		border-radius: 4px 4px 0 0;
 		position: relative;
 	}
+	.bar--oficial,
 	.bar.active {
 		background: var(--primary-blue, #4285f4);
+	}
+	.bar--bitacora {
+		background: #f59e0b;
 	}
 	.bar-label {
 		font-size: 9px;

@@ -29,7 +29,9 @@ export class GetInformation {
 			monthlyRecord: remote.record_mensual,
 			monthlyRecordDate: remote.fecha_record_mensual,
 			puntaje_asistencia: remote.puntaje_asistencia ?? null,
-			puntaje_distancia: remote.puntaje_distancia ?? null
+			puntaje_distancia: remote.puntaje_distancia ?? null,
+			metros_oficiales: remote.metros_oficiales ?? null,
+			metros_bitacora: remote.metros_bitacora ?? null
 		};
 	}
 }

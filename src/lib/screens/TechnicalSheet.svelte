@@ -68,21 +68,13 @@
 				const apiDataForDay = weeklyData.find((d) => d.fecha === formattedDate);
 				days.push({
 					label: dayLabels[dayOfWeek],
-					distance: apiDataForDay ? apiDataForDay.distancia : 0,
+					oficial: apiDataForDay ? (apiDataForDay.oficial ?? 0) : 0,
+					pendiente: apiDataForDay ? (apiDataForDay.pendiente ?? 0) : 0,
 					active: i === 0 // Mark today's bar as active
 				});
 			}
 
-			const distances = days.map((d) => d.distance);
-			const maxDistance = Math.max(...distances, 0);
-			totalWeeklyDistance = distances.reduce((sum, d) => sum + d, 0);
-			weeklyRecord = Math.max(weeklyRecord, totalWeeklyDistance); // Keep track of historical max
-
-			// Calculate height percentage for each bar
-			return days.map((day) => ({
-				...day,
-				height: maxDistance > 0 ? (day.distance / maxDistance) * 100 : 0
-			}));
+			return days;
 		};
 		chartData = processChartData(weeklyDistance);
 	}
