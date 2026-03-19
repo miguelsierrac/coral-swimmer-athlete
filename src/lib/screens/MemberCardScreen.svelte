@@ -835,6 +835,7 @@
 						{radarStats}
 						newBadges={recentAchievements}
 						showNewIndicators={isFlipped && recentAchievements.length > 0}
+						athleteId={athlete.id}
 						on:flip={() => { isFlipped = !isFlipped; isEditMode = false; }}
 					/>
 				</div>

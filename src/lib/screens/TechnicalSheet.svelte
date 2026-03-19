@@ -2,6 +2,7 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
+	import KilometrajeCard from '$lib/components/KilometrajeCard.svelte';
 	import {
 		trackViewAthleteCard,
 		trackViewLeaderboard,
@@ -36,6 +37,9 @@
 	export let showNewIndicators = false; // Mostrar indicadores de novedad
 	/** radar_stats from meta_game: { potencia, resistencia, tecnica, apnea } */
 	export let radarStats = null;
+	/** Athlete numeric ID — required for Bitácora submission */
+	export let athleteId = null;
+
 
 	const dispatch = createEventDispatcher();
 
@@ -270,17 +274,19 @@
 			>
 		</div>
 
-		<!-- 1. Basic Stats (Común para todos) -->
-		<div class="basic-stats-grid" id="basic-stats-section">
-			<div class="stat-box">
-				<small>Peso</small>
-				<strong>{stats.weight ?? '-'} <span class="unit">kg</span></strong>
+		<!-- 1. Basic Stats — solo visible en vista niños / cargando -->
+		{#if isKids || isLoading}
+			<div class="basic-stats-grid" id="basic-stats-section">
+				<div class="stat-box">
+					<small>Peso</small>
+					<strong>{stats.weight ?? '-'} <span class="unit">kg</span></strong>
+				</div>
+				<div class="stat-box">
+					<small>Talla</small>
+					<strong>{stats.height ?? '-'} <span class="unit">cm</span></strong>
+				</div>
 			</div>
-			<div class="stat-box">
-				<small>Talla</small>
-				<strong>{stats.height ?? '-'} <span class="unit">cm</span></strong>
-			</div>
-		</div>
+		{/if}
 
 		{#if isLoading}
 			<div class="level-card-container">
@@ -333,7 +339,9 @@
 		{:else}
 			<!-- VISTA ADULTOS -->
 			<div class="adult-data-wrapper">
-				<div class="composition-container">
+
+				<!-- Fila 1: composición corporal (3 cols) -->
+				<div class="comp-row-3">
 					<div class="comp-card">
 						<div
 							class="chart-donut"
@@ -342,32 +350,18 @@
 							<span class="chart-value">{stats.fatPercentage ?? '-'}%</span>
 						</div>
 						<span class="comp-label">% Grasa</span>
-						<!-- <span class="comp-sub">Ideal: 12-15%</span> -->
 					</div>
 					<div class="comp-card">
 						<div
 							class="chart-donut"
-							style="--percent: {stats.musclePercentage ??
-								0}%; --chart-color: var(--secondary-green);"
+							style="--percent: {stats.musclePercentage ?? 0}%; --chart-color: var(--secondary-green);"
 						>
 							<span class="chart-value">{stats.musclePercentage ?? '-'}%</span>
 						</div>
 						<span class="comp-label">% Músculo</span>
-						<!-- <span class="comp-sub positive">+2% vs mes ant.</span> -->
 					</div>
-				</div>
-
-				<div class="measurements-grid">
-					<div class="measure-box">
-						<small>Cintura</small>
-						<strong>{stats.waist ?? '-'} <span class="measure-unit">cm</span></strong>
-					</div>
-					<div class="measure-box">
-						<small>Cadera</small>
-						<strong>{stats.hip ?? '-'} <span class="measure-unit">cm</span></strong>
-					</div>
-					<div 
-						class="measure-box clickable"
+					<div
+						class="comp-card comp-visc clickable"
 						role="button"
 						tabindex="0"
 						on:click={toggleVisceralFatPopup}
@@ -375,10 +369,28 @@
 							if (e.key === 'Enter') toggleVisceralFatPopup();
 						}}
 					>
-						<small>Grasa Visc. ℹ️</small>
-						<strong style="color: #E67C73;"
-							>{stats.visceralFat ?? '-'} <span class="measure-unit">%</span></strong
-						>
+						<span class="visc-number" style="color: #E67C73;">{stats.visceralFat ?? '-'}</span>
+						<span class="comp-label">Grasa Visc. ℹ️</span>
+					</div>
+				</div>
+
+				<!-- Fila 2: medidas físicas (4 cols) -->
+				<div class="metrics-strip-4" id="basic-stats-section">
+					<div class="stat-chip">
+						<small>Peso</small>
+						<strong>{stats.weight ?? '-'} <span class="chip-unit">kg</span></strong>
+					</div>
+					<div class="stat-chip">
+						<small>Talla</small>
+						<strong>{stats.height ?? '-'} <span class="chip-unit">cm</span></strong>
+					</div>
+					<div class="stat-chip">
+						<small>Cintura</small>
+						<strong>{stats.waist ?? '-'} <span class="chip-unit">cm</span></strong>
+					</div>
+					<div class="stat-chip">
+						<small>Cadera</small>
+						<strong>{stats.hip ?? '-'} <span class="chip-unit">cm</span></strong>
 					</div>
 				</div>
 
@@ -530,48 +542,18 @@
 			{/if}
 		{/if}
 
-		<!-- SECCIÓN VOLUMEN ACTIVIDAD (Para todos los planes) -->
+		<!-- SECCIÓN KILOMETRAJE ACUMULADO -->
 		{#if chartData.some(d => d.distance > 0) || totalDistance || monthlyRecord || stats.puntaje_asistencia != null || stats.puntaje_distancia != null}
-			<div class="activity-section">
-				<div class="chart-section">
-					<div class="chart-title">
-						<div class="chart-title-left">
-							<span>Volumen Actividad</span>
-							{#if stats.puntaje_asistencia != null}
-								<span class="pts-hint">✅ +{stats.puntaje_asistencia} pts asistencia</span>
-							{/if}
-						</div>
-						<div class="chart-title-right">
-							<span style="color:var(--primary-blue)">Total: {totalDistance ? (totalDistance / 1000).toFixed(1) : '0'}k</span>
-							{#if stats.puntaje_distancia != null}
-								<span class="pts-hint">🏊 +{stats.puntaje_distancia} pts</span>
-							{/if}
-						</div>
-					</div>
-					<div class="bar-chart">
-						{#each chartData as day}
-							<div class="bar-group">
-								{#if day.distance > 0}
-									<span class="bar-value">{(day.distance / 1000).toFixed(1)}k</span>
-								{/if}
-								<div class="bar" class:active={day.active} style="height: {day.height}%;" />
-								<span class="bar-label">{day.label}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-
-				{#if monthlyRecord}
-					<div class="milestone-box">
-						<div class="milestone-icon">🏆</div>
-						<div class="milestone-text">
-							<span class="milestone-label">Récord Histórico Mensual</span>
-							<span class="milestone-val">{(monthlyRecord / 1000).toFixed(1)}k metros</span>
-						</div>
-						<div class="milestone-date">{monthlyRecordDate || '-'}</div>
-					</div>
-				{/if}
-			</div>
+			<KilometrajeCard
+				{tier}
+				{chartData}
+				{totalDistance}
+				{monthlyRecord}
+				{monthlyRecordDate}
+				puntajeDistancia={stats.puntaje_distancia}
+				puntajeAsistencia={stats.puntaje_asistencia}
+				{athleteId}
+			/>
 		{/if}
 
 		<!-- SECCIÓN PERFORMANCE (Con bloqueo) - Métricas Avanzadas -->
@@ -705,20 +687,84 @@
 		color: #9c7849;
 		font-weight: 500;
 	}
+	/* old flex container kept for compat — new grid below */
 	.composition-container {
 		display: flex;
 		justify-content: space-between;
 		margin-bottom: 8px;
 		gap: 8px;
 	}
+	/* 3-column composition row — donuts + grasa visceral */
+	.comp-row-3 {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
 	.comp-card {
 		background: white;
 		border: 1px solid #eee;
-		border-radius: 16px;
-		padding: 5px 3px;
-		width: 50%;
+		border-radius: 14px;
+		padding: 8px 4px 6px;
+		width: auto;
 		text-align: center;
 		box-sizing: border-box;
+	}
+	/* Grasa visceral card (no donut, big number) */
+	.comp-visc {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+	}
+	.comp-visc:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+		border-color: #4285f4;
+	}
+	.visc-number {
+		display: block;
+		font-size: 22px;
+		font-weight: 800;
+		line-height: 1;
+		margin-bottom: 4px;
+		margin-top: 4px;
+	}
+	/* 4-column physical measurements strip */
+	.metrics-strip-4 {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+	.stat-chip {
+		background: #f4eee7;
+		border-radius: 12px;
+		padding: 5px 3px;
+		text-align: center;
+	}
+	.stat-chip small {
+		display: block;
+		font-size: 7px;
+		color: #9c7849;
+		text-transform: uppercase;
+		font-weight: 700;
+		letter-spacing: 0.3px;
+		margin-bottom: 2px;
+	}
+	.stat-chip strong {
+		display: block;
+		font-size: 12px;
+		font-weight: 800;
+		color: #1c150d;
+		line-height: 1.1;
+	}
+	.chip-unit {
+		font-size: 9px;
+		color: #9c7849;
+		font-weight: 500;
 	}
 
 	.chart-donut {
@@ -880,6 +926,7 @@
 		margin-top: 3px;
 		display: inline-block;
 	}
+	/* kept for compat if used elsewhere */
 	.measurements-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
@@ -1020,32 +1067,7 @@
 	.chart-section {
 		margin-bottom: 8px;
 	}
-	.chart-title {
-		font-size: 10px;
-		font-weight: 700;
-		color: #888;
-		text-transform: uppercase;
-		margin-bottom: 6px;
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-	}
-	.chart-title-left,
-	.chart-title-right {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-	.chart-title-right {
-		align-items: flex-end;
-	}
-	.pts-hint {
-		font-size: 9px;
-		font-weight: 600;
-		color: #10b981;
-		text-transform: none;
-		letter-spacing: 0;
-	}
+
 	.bar-chart {
 		display: flex;
 		justify-content: space-between;

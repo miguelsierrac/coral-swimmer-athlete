@@ -5,6 +5,7 @@ import { GetLevel } from '$lib/actions/GetLevel';
 import { GetAllBadges } from '$lib/actions/GetAllBadges';
 import { GetMeasurements } from '$lib/actions/GetMeasurements';
 import { GetGamificationData } from '$lib/actions/GetGamificationData';
+import { SubmitBitacora } from '$lib/actions/SubmitBitacora';
 import ApiClient from '$lib/infrastructure/APIClient';
 import { Request } from '$lib/infrastructure/Request';
 
@@ -18,5 +19,6 @@ export default {
 	getLevel: new GetLevel(apiClient),
 	getAllBadges: new GetAllBadges(apiClient),
 	getMeasurements: new GetMeasurements(apiClient),
-	getGamificationData: new GetGamificationData(apiClient)
+	getGamificationData: new GetGamificationData(apiClient),
+	submitBitacora: new SubmitBitacora(apiClient)
 };
