@@ -2,7 +2,7 @@
 	import MemberCardScreen from '$lib/screens/MemberCardScreen.svelte';
 	import { onMount, getContext } from 'svelte';
 	import { AthleteNotFoundError } from '$lib/actions/GetAthlete';
-	import { popup } from '$lib/stores';
+	import { popup, cachedLevels, cachedMeasurement } from '$lib/stores';
 
 	const provider = getContext('provider');
 	const redirect = getContext('redirect');
@@ -26,9 +26,58 @@
 		$lastSync = null;
 	};
 
+	/**
+	 * Derives level, badges and stats from a levels array + progress object.
+	 * Mutates the outer variables directly so it can be called both from the
+	 * cache seed and from the fresh-fetch path.
+	 */
+	function buildGameState(allLevels, progress) {
+		if (!progress) return;
+		level = allLevels.find((l) => l.id === progress.nivel_actual_id) || null;
+		if (level) {
+			badges = level.objetivos.map((obj) => ({
+				...obj,
+				progress: progress.progreso_objetivos[obj.id] || null
+			}));
+		}
+		stats = {
+			measurementDate: new Date(),
+			height: progress.height || null,
+			weight: progress.weight || null,
+			puntaje_asistencia: $athlete?.puntaje_asistencia ?? null,
+			puntaje_distancia: $athlete?.puntaje_distancia ?? null
+		};
+		if ($athlete?.tier === 'kids') {
+			const total = level ? level.objetivos.length : 0;
+			const done = Object.values(progress.progreso_objetivos).filter((p) => p !== null).length;
+			stats = { ...stats, levelName: level?.nombre, levelIcon: level?.icono, levelColor: level?.color,
+				levelProgress: total > 0 ? Math.round((done / total) * 100) : 0 };
+		} else if (['health', 'performance'].includes($athlete?.tier)) {
+			const total = level ? level.objetivos.length : 0;
+			const done = Object.values(progress.progreso_objetivos).filter((p) => p !== null).length;
+			stats = { ...stats,
+				fatPercentage: progress.fat_percentage || null,
+				musclePercentage: progress.muscle_percentage || null,
+				waist: progress.biometrics?.waist || null,
+				hip: progress.biometrics?.hip || null,
+				visceralFat: progress.biometrics?.visceral || null,
+				specialty: progress.specialty || null,
+				levelName: level?.nombre, levelIcon: level?.icono, levelColor: level?.color,
+				levelProgress: total > 0 ? Math.round((done / total) * 100) : 0 };
+		}
+	}
+
 	onMount(async () => {
 		try {
 			if ($athlete) {
+				// Seed UI instantly from cache so styles render before the network responds
+				if ($cachedLevels?.length && $cachedMeasurement) {
+					gamificationLevels = $cachedLevels;
+					userGamificationProgress = $cachedMeasurement;
+					buildGameState(gamificationLevels, userGamificationProgress);
+					isLoading = false;
+				}
+
 				const [fetchedAthlete, information, allLevels, measurements] = await Promise.all([
 					provider.getAthlete.handle($athlete.identification),
 					provider.getInformation.handle($athlete.id).catch((error) => {
@@ -61,62 +110,19 @@
 				gamificationLevels = allLevels;
 				userGamificationProgress = measurements;
 
+				// Persist fresh data so the next load renders instantly
+				$cachedLevels = allLevels;
+				$cachedMeasurement = measurements;
+
 				if (userGamificationProgress) {
-					// Find the athlete's current level object
-					level =
-						gamificationLevels.find((l) => l.id === userGamificationProgress.nivel_actual_id) ||
-						null;
+					buildGameState(gamificationLevels, userGamificationProgress);
 
-					// Derive `badges` from the objectives of the current level only (used by TechnicalSheet)
-					if (level) {
-						badges = level.objetivos.map((obj) => ({
-							...obj,
-							progress: userGamificationProgress.progreso_objetivos[obj.id] || null
-						}));
-					}
-
-					// 3. Populate `stats` for the TechnicalSheet
-					stats = {
-						measurementDate: new Date(), // The new measurement endpoint doesn't bring a date, using current
-						height: userGamificationProgress.height || null,
-						weight: userGamificationProgress.weight || null,
-						puntaje_asistencia: $athlete.puntaje_asistencia ?? null,
-						puntaje_distancia: $athlete.puntaje_distancia ?? null
-					};
-
-					if ($athlete.tier === 'kids') {
-						const totalObjectives = level ? level.objetivos.length : 0;
-						const completedObjectives = Object.values(
-							userGamificationProgress.progreso_objetivos
-						).filter((p) => p !== null).length;
-
+					// Keep stats.puntaje_* in sync with freshly fetched athlete info
+					if (information) {
 						stats = {
 							...stats,
-							levelName: level?.nombre,
-							levelIcon: level?.icono,
-							levelColor: level?.color,
-							levelProgress:
-								totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0
-						};
-					} else if (['health', 'performance'].includes($athlete.tier)) {
-						const totalObjectives = level ? level.objetivos.length : 0;
-						const completedObjectives = Object.values(
-							userGamificationProgress.progreso_objetivos
-						).filter((p) => p !== null).length;
-
-						stats = {
-							...stats,
-							fatPercentage: userGamificationProgress.fat_percentage || null,
-							musclePercentage: userGamificationProgress.muscle_percentage || null,
-							waist: userGamificationProgress.biometrics?.waist || null,
-							hip: userGamificationProgress.biometrics?.hip || null,
-							visceralFat: userGamificationProgress.biometrics?.visceral || null,
-							specialty: userGamificationProgress.specialty || null,
-							levelName: level?.nombre,
-							levelIcon: level?.icono,
-							levelColor: level?.color,
-							levelProgress:
-								totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0
+							puntaje_asistencia: $athlete.puntaje_asistencia ?? null,
+							puntaje_distancia: $athlete.puntaje_distancia ?? null
 						};
 					}
 				}
