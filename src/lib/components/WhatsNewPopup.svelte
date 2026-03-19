@@ -5,11 +5,12 @@
 	export let visible = false;
 
 	const dispatch = createEventDispatcher();
-	const STORAGE_KEY = 'whats_new_rewards_v1_seen';
+	const STORAGE_KEY = 'whats_new_v2_seen';
 
 	let neverShowAgain = false;
+	let currentSlide = 0;
 
-	$: if (visible) trackWhatsNewShown();
+	$: if (visible) { currentSlide = 0; trackWhatsNewShown(); }
 
 	function close() {
 		trackWhatsNewDismissed(neverShowAgain);
@@ -19,27 +20,63 @@
 		dispatch('close');
 	}
 
-	function handleKeyDown(e) {
-		if (e.key === 'Escape') close();
+	function nextSlide() {
+		currentSlide = 1;
 	}
 
-	const features = [
+	function handleKeyDown(e) {
+		if (e.key === 'Escape') close();
+		if (e.key === 'ArrowRight' && currentSlide === 0) nextSlide();
+	}
+
+	const slides = [
 		{
-			emoji: '🎨',
-			title: 'Fondos personalizados',
-			desc: 'Desbloquea fondos exclusivos completando objetivos y cámbialos desde el modo edición de tu carnet.'
+			badge: '¡Novedad!',
+			title: 'Bitácora de Entrenamiento',
+			subtitle: 'Registra tus sesiones directamente desde tu carnet. Toca el pill <strong style="color:#e2e8f0">＋ Bitácora</strong> en la tarjeta de Kilometraje Acumulado para comenzar.',
+			features: [
+				{
+					emoji: '⚡',
+					title: 'Registro rápido',
+					desc: 'Anota el volumen total de tu sesión en segundos para que el entrenador lo valide.'
+				},
+				{
+					emoji: '📋',
+					title: 'Registro detallado',
+					desc: 'Describe cada serie con repeticiones, distancia y estilo para un seguimiento más preciso.'
+				},
+				{
+					emoji: '🏆',
+					title: 'Gana puntos por entrenar',
+					desc: 'Cada sesión validada te otorga puntos de experiencia. ¡Más entrenas, más subes de nivel!'
+				}
+			]
 		},
 		{
-			emoji: '🖼️',
-			title: 'Bordes de carnet',
-			desc: 'Gana bordes únicos como recompensa y elige el que más te identifique para decorar tu carnet.'
-		},
-		{
-			emoji: '✨',
-			title: 'Stickers coleccionables',
-			desc: 'Cada logro que completes puede premiarte con un sticker. ¡Colecciónalos y pégalos en tu carnet!'
+			badge: 'También nuevo',
+			title: 'Personaliza tu Carnet',
+			subtitle: 'Nuevas recompensas desbloqueables para hacer único tu carnet de atleta. Toca el ícono <strong style="color:#e2e8f0">✏️</strong> en tu carnet para personalizar.',
+			features: [
+				{
+					emoji: '🎨',
+					title: 'Fondos personalizados',
+					desc: 'Desbloquea fondos exclusivos completando objetivos y cámbialos desde el modo edición de tu carnet.'
+				},
+				{
+					emoji: '🖼️',
+					title: 'Bordes de carnet',
+					desc: 'Gana bordes únicos como recompensa y elige el que más te identifique para decorar tu carnet.'
+				},
+				{
+					emoji: '✨',
+					title: 'Stickers coleccionables',
+					desc: 'Cada logro que completes puede premiarte con un sticker. ¡Colecciónalos y pégalos en tu carnet!'
+				}
+			]
 		}
 	];
+
+	$: slide = slides[currentSlide];
 </script>
 
 {#if visible}
@@ -58,30 +95,54 @@
 		<div class="wn-card">
 			<button class="wn-close" on:click={close} aria-label="Cerrar">✕</button>
 
-			<div class="wn-header">
-				<span class="wn-badge">¡Novedad!</span>
-				<h2 class="wn-title">Personaliza tu Carnet</h2>
-				<p class="wn-subtitle">Nuevas recompensas desbloqueables para hacer único tu carnet de atleta. Toca el ícono <strong style="color:#e2e8f0">✏️</strong> en tu carnet para personalizar.</p>
+			<div class="wn-dots">
+				{#each slides as _, i}
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<span
+						class="wn-dot"
+						class:wn-dot-active={i === currentSlide}
+						on:click={() => { if (i < currentSlide || (i === 1 && currentSlide === 0)) { if (i === 1) nextSlide(); else currentSlide = i; } }}
+					></span>
+				{/each}
 			</div>
 
-			<ul class="wn-features">
-				{#each features as f}
-					<li class="wn-feature">
-						<span class="wn-feature-emoji">{f.emoji}</span>
-						<div>
-							<strong class="wn-feature-title">{f.title}</strong>
-							<p class="wn-feature-desc">{f.desc}</p>
+			<div class="wn-slides">
+				<div class="wn-slide-track" style="transform: translateX(-{currentSlide * 100}%)">
+					{#each slides as s}
+						<div class="wn-slide">
+							<div class="wn-header">
+								<span class="wn-badge">{s.badge}</span>
+								<h2 class="wn-title">{s.title}</h2>
+								<p class="wn-subtitle">{@html s.subtitle}</p>
+							</div>
+
+							<ul class="wn-features">
+								{#each s.features as f}
+									<li class="wn-feature">
+										<span class="wn-feature-emoji">{f.emoji}</span>
+										<div>
+											<strong class="wn-feature-title">{f.title}</strong>
+											<p class="wn-feature-desc">{f.desc}</p>
+										</div>
+									</li>
+								{/each}
+							</ul>
 						</div>
-					</li>
-				{/each}
-			</ul>
+					{/each}
+				</div>
+			</div>
 
 			<div class="wn-footer">
-				<label class="wn-checkbox-label">
-					<input type="checkbox" bind:checked={neverShowAgain} />
-					<span>No volver a mostrar</span>
-				</label>
-				<button class="wn-btn" on:click={close}>¡Entendido! 🚀</button>
+				{#if currentSlide === slides.length - 1}
+					<label class="wn-checkbox-label">
+						<input type="checkbox" bind:checked={neverShowAgain} />
+						<span>No volver a mostrar</span>
+					</label>
+					<button class="wn-btn" on:click={close}>¡Entendido! 🚀</button>
+				{:else}
+					<button class="wn-btn wn-btn-next" on:click={nextSlide}>Siguiente →</button>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -260,5 +321,42 @@
 	}
 	.wn-btn:hover {
 		opacity: 0.88;
+	}
+	.wn-btn-next {
+		background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+	}
+
+	/* ── Dots ───────────────────────────────────────────────────── */
+	.wn-dots {
+		display: flex;
+		justify-content: center;
+		gap: 7px;
+		margin-bottom: 18px;
+	}
+	.wn-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.18);
+		transition: background 0.25s, transform 0.25s;
+		cursor: default;
+	}
+	.wn-dot-active {
+		background: #6366f1;
+		transform: scale(1.3);
+	}
+
+	/* ── Carousel ───────────────────────────────────────────────── */
+	.wn-slides {
+		overflow: hidden;
+	}
+	.wn-slide-track {
+		display: flex;
+		transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+		will-change: transform;
+	}
+	.wn-slide {
+		min-width: 100%;
+		box-sizing: border-box;
 	}
 </style>

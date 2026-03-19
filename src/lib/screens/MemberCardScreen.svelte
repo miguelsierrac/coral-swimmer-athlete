@@ -150,7 +150,7 @@
 	let unlockQueue = [];
 
 	// What's New popup
-	const WHATS_NEW_KEY = 'whats_new_rewards_v1_seen';
+	const WHATS_NEW_KEY = 'whats_new_v2_seen';
 	let showWhatsNew = false;
 	let whatsNewChecked = false;
 	$: if (athlete && athlete.tier !== 'standard' && !whatsNewChecked) {
