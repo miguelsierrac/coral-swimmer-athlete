@@ -624,11 +624,11 @@
 							{/if}
 							{#if athlete.total_distance}
 								<div class="nc-medals">
-									{#if athlete.total_distance >= 1000}<img src="medal_1k.png" alt="1k" width="22" height="22"/>{/if}
-									{#if athlete.total_distance >= 2000}<img src="medal_2k.png" alt="2k" width="22" height="22"/>{/if}
-									{#if athlete.total_distance >= 5000}<img src="medal_5k.png" alt="5k" width="22" height="22"/>{/if}
-									{#if athlete.total_distance >= 10000}<img src="medal_10k.png" alt="10k" width="22" height="22"/>{/if}
-									{#if athlete.total_distance >= 20000}<img src="medal_20k.png" alt="20k" width="22" height="22"/>{/if}
+									{#if athlete.total_distance >= 1000}<img src="medal_1k.png" alt="1k" width="48" height="48"/>{/if}
+									{#if athlete.total_distance >= 2000}<img src="medal_2k.png" alt="2k" width="48" height="48"/>{/if}
+									{#if athlete.total_distance >= 5000}<img src="medal_5k.png" alt="5k" width="48" height="48"/>{/if}
+									{#if athlete.total_distance >= 10000}<img src="medal_10k.png" alt="10k" width="48" height="48"/>{/if}
+									{#if athlete.total_distance >= 20000}<img src="medal_20k.png" alt="20k" width="48" height="48"/>{/if}
 								</div>
 							{/if}
 						</div>
@@ -1087,7 +1087,13 @@
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
-		gap: 4px;
+		gap: 8px;
+	}
+
+	.nc-medals img {
+		width: 48px;
+		height: 48px;
+		filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
 	}
 
 	.nc-panel {
