@@ -37,15 +37,11 @@
  */
 
 /**
- * @typedef {Object} MeasurementValues
- * @property {number} weight
- * @property {number} height
- * @property {number} [fat_percentage]
- * @property {number} [muscle_percentage]
- * @property {{waist: number, hip: number, visceral: number}} [biometrics]
- * @property {{tool: 'Bialetas' | 'Monoaleta', mode: 'Velocidad' | 'Fondo'}} [specialty]
- * @property {number} nivel_actual_id
- * @property {ObjectiveProgress} progreso_objetivos
+ * @typedef {import('./MeasurementNormalizer').NormalizedMeasurement} MeasurementValues
+ *
+ * Flat measurement shape consumed by buildGameState and $lastMeasurement comparisons.
+ * Both V1 (legacy flat) and V2 (nested biometria/tecnica) on-disk formats are
+ * transparently normalized to this shape by MeasurementNormalizer.
  */
 
 /**
@@ -55,6 +51,8 @@
  * @property {string} deportista_id
  * @property {string} valores // JSON string
  */
+
+import { normalizeMeasurement } from './MeasurementNormalizer.js';
 
 export class GetGamificationData {
 	_apiClient;
@@ -142,21 +140,15 @@ export class GetGamificationData {
 	}
 
 	/**
-	 * Safely parses the JSON string for measurement values.
+	 * Normalizes the `valores` JSON string into a flat NormalizedMeasurement.
+	 * Handles both V1 (legacy flat) and V2 (nested biometria/tecnica) formats.
+	 * Never throws — returns a safe default on any error.
+	 *
 	 * @param {string} jsonString
-	 * @returns {MeasurementValues|null}
+	 * @returns {MeasurementValues}
 	 * @private
 	 */
 	_parseMeasurementValues(jsonString) {
-		if (!jsonString || typeof jsonString !== 'string') {
-			return null;
-		}
-		try {
-			// It is expected that the JSON is a valid MeasurementValues object.
-			return JSON.parse(jsonString);
-		} catch (e) {
-			console.error('Failed to parse measurement values JSON:', e);
-			return null;
-		}
+		return normalizeMeasurement(jsonString);
 	}
 }
