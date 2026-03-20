@@ -34,10 +34,11 @@
 	function buildGameState(allLevels, progress) {
 		if (!progress) return;
 		level = allLevels.find((l) => l.id === progress.nivel_actual_id) || null;
+		const progreso = progress.progreso_objetivos || {};
 		if (level) {
 			badges = level.objetivos.map((obj) => ({
 				...obj,
-				progress: progress.progreso_objetivos[obj.id] || null
+				progress: progreso[obj.id] || null
 			}));
 		}
 		stats = {
@@ -49,12 +50,12 @@
 		};
 		if ($athlete?.tier === 'kids') {
 			const total = level ? level.objetivos.length : 0;
-			const done = Object.values(progress.progreso_objetivos).filter((p) => p !== null).length;
+			const done = Object.values(progreso).filter((p) => p !== null).length;
 			stats = { ...stats, levelName: level?.nombre, levelIcon: level?.icono, levelColor: level?.color,
 				levelProgress: total > 0 ? Math.round((done / total) * 100) : 0 };
 		} else if (['health', 'performance'].includes($athlete?.tier)) {
 			const total = level ? level.objetivos.length : 0;
-			const done = Object.values(progress.progreso_objetivos).filter((p) => p !== null).length;
+			const done = Object.values(progreso).filter((p) => p !== null).length;
 			stats = { ...stats,
 				fatPercentage: progress.fat_percentage || null,
 				musclePercentage: progress.muscle_percentage || null,
