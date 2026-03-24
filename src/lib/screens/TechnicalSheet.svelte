@@ -1,8 +1,10 @@
 <script>
 	import { createEventDispatcher, onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import BadgePopover from '$lib/components/BadgePopover.svelte';
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
 	import KilometrajeCard from '$lib/components/KilometrajeCard.svelte';
+	import { pendingBitacoras } from '$lib/stores.js';
 	import {
 		trackViewAthleteCard,
 		trackViewLeaderboard,
@@ -76,8 +78,52 @@
 
 			return days;
 		};
-		chartData = processChartData(weeklyDistance);
+
+		const days = processChartData(weeklyDistance);
+		const athletePending = ($pendingBitacoras ?? {})[athleteId] ?? [];
+
+		if (athletePending.length > 0) {
+			const today = new Date();
+			chartData = days.map((day, i) => {
+				const date = new Date();
+				date.setDate(today.getDate() - (6 - i));
+				const dd = String(date.getDate()).padStart(2, '0');
+				const mm = String(date.getMonth() + 1).padStart(2, '0');
+				const yyyy = date.getFullYear();
+				const fullDate = `${dd}/${mm}/${yyyy}`;
+				const local = athletePending.find((e) => e.date === fullDate);
+				// Only inject local meters if remote hasn't processed this day yet
+				if (local && day.pendiente === 0) {
+					return { ...day, pendiente: local.meters };
+				}
+				return day;
+			});
+		} else {
+			chartData = days;
+		}
 	}
+
+	// Prune local entries once the remote API reflects them (pendiente > 0 from server)
+	function pruneStalePending(remoteData, id) {
+		if (!id || !Array.isArray(remoteData)) return;
+		const stored = get(pendingBitacoras);
+		const entries = (stored ?? {})[id] ?? [];
+		if (!entries.length) return;
+		const staleKeys = entries
+			.filter((e) => {
+				const [dd, mm] = e.date.split('/');
+				const shortDate = `${dd}/${mm}`;
+				const remote = remoteData.find((d) => d.fecha === shortDate);
+				return remote && remote.pendiente > 0;
+			})
+			.map((e) => e.date);
+		if (!staleKeys.length) return;
+		pendingBitacoras.update((all) => ({
+			...all,
+			[id]: (all[id] ?? []).filter((e) => !staleKeys.includes(e.date))
+		}));
+	}
+	$: pruneStalePending(weeklyDistance, athleteId);
 
 	// Reactividad para facilitar la lectura en el HTML
 	$: isKids = tier === 'kids';

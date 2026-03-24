@@ -1,6 +1,7 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
 	import { getContext } from 'svelte';
+	import { pendingBitacoras } from '$lib/stores.js';
 
 	export let athleteId;
 	export let visible = false;
@@ -110,6 +111,19 @@
 				ejercicios
 			});
 			submitSuccess = true;
+			try {
+				const dateKey = formatDateForAPI(selectedDate);
+				pendingBitacoras?.update((all) => {
+					const existing = all[athleteId] ?? [];
+					const idx = existing.findIndex((e) => e.date === dateKey);
+					if (idx >= 0) {
+						const updated = [...existing];
+						updated[idx] = { date: dateKey, meters: updated[idx].meters + totalMeters };
+						return { ...all, [athleteId]: updated };
+					}
+					return { ...all, [athleteId]: [...existing, { date: dateKey, meters: totalMeters }] };
+				});
+			} catch {}
 			setTimeout(() => {
 				close();
 			}, 1800);

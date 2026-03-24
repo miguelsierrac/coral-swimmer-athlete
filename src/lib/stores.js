@@ -18,3 +18,7 @@ export const popup = writable(null);
 // Notification history – persisted across sessions, user-controlled
 // Shape: { id, title, body, timestamp, read }
 export const notifications = localStore('NOTIFICATIONS', []);
+
+// Locally-submitted bitácoras waiting for the server gamification cycle
+// Shape: { [athleteId]: [{ date: 'DD/MM/YYYY', meters: number }] }
+export const pendingBitacoras = localStore('PENDING_BITACORAS', {});

@@ -26,6 +26,12 @@ export const localStore = (key, initial = undefined) => {
 			localStorage.setItem(key, toString(value)); // save also to local storage as a string
 			return set(value);
 		},
-		update
+		update: (updater) => {
+			update((current) => {
+				const next = updater(current);
+				localStorage.setItem(key, toString(next));
+				return next;
+			});
+		}
 	};
 };
