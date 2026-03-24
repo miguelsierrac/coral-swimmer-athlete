@@ -129,6 +129,7 @@
 			{ repetitions: '', distance: '', description: '' },
 			{ repetitions: '', distance: '', description: '' }
 		];
+		isSubmitting = false;
 		submitError = null;
 		submitSuccess = false;
 		dispatch('close');
